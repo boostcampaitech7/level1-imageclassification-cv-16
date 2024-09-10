@@ -1,5 +1,9 @@
-learning_rate: 0.001
+learningRate: 0.001
 epochs: 30
-batch_size: 32
-loss_function: cross_entropy
-# optimizer: 얘까지 여기로 빼는 게 맞는지
+batchSize: 32
+lossFunction:
+- cross_entropy
+optimizers: # 얘까지 여기로 빼는 게 맞는지
+- adam
+- sgd
+- rmsprop
