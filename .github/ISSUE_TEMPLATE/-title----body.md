@@ -1,5 +1,5 @@
 ---
-name: "[title] / body"
+name: "title/ body"
 about: Suggest an idea for this project
 title: ''
 labels: ''
