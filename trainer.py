@@ -16,6 +16,7 @@ from tqdm.auto import tqdm
 from torch.utils.data import DataLoader, Dataset
 from sklearn.model_selection import train_test_split
 from albumentations.pytorch import ToTensorV2
+from util.checkpoints import load_checkpoint, save_checkpoint
 
 class Trainer: # 변수 넣으면 바로 학습되도록
     def __init__( # 여긴 config로 나중에 빼야하는지 이걸 유지하는지
@@ -43,29 +44,23 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
 
+    def _save_checkpoint(self, epoch, val_loss):
+        if val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
+            save_checkpoint(self.model, self.optimizer, epoch, val_loss, checkpoint_filepath)
+            print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
+            
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def save_model(self, epoch, loss): # 가장 좋은 때의 모델 상태를 저장
-        # 모델 저장 경로 설정
-        os.makedirs(self.result_path, exist_ok=True)
-
-        # 현재 에폭 모델 저장
-        current_model_path = os.path.join(self.result_path, f'model_epoch_{epoch}_loss_{loss:.4f}.pt')
-        torch.save(self.model.state_dict(), current_model_path)
-
-        # 최상위 3개 모델 관리
-        self.best_models.append((loss, epoch, current_model_path))
-        self.best_models.sort()
-        if len(self.best_models) > 3:
-            _, _, path_to_remove = self.best_models.pop(-1)  # 가장 높은 손실 모델 삭제
-            if os.path.exists(path_to_remove):
-                os.remove(path_to_remove)
-
-        # 가장 낮은 손실의 모델 저장
-        if loss < self.lowest_loss:
-            self.lowest_loss = loss
-            best_model_path = os.path.join(self.result_path, 'best_model.pt')
-            torch.save(self.model.state_dict(), best_model_path)
-            print(f"Save {epoch}epoch result. Loss = {loss:.4f}")
+    def final_save_model(self, epoch, loss) -> None:
+        # checkpoints 폴더가 없으면 생성
+        checkpoint_dir = 'checkpoints'
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        
+        # 체크포인트 저장
+        final_checkpoint_filepath = os.path.join(checkpoint_dir, 'final_checkpoint.pth')
+        save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
+        print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self) -> float:
         # 한 에폭 동안의 훈련을 진행
@@ -83,7 +78,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             loss = self.loss_fn(outputs, targets)
             loss.backward()
             self.optimizer.step()
-            # self.scheduler.step() 아직 우리 스케줄러 뭐 안 함
+            self.scheduler.step() # 스케줄러 더 알아보기
             
             total_loss += loss.item() # 손실 계산
             
@@ -132,5 +127,11 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb code 추가
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
-            self.save_model(epoch, val_loss)
+            # 체크포인트 trainloss에 대해 찍어야하?
+            # self._save_checkpoint(epoch, val_loss)
+            self._save_checkpoint(epoch, train_loss)
+            
             self.scheduler.step()
+        # 최종 체크포인트
+        # self.final_save_model(epoch, val_loss)
+        self.final_save_model(epoch, train_loss)
