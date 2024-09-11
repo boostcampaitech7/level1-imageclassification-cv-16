@@ -112,8 +112,9 @@ class MixUpTransforms:
 class TransformSelector: #사용자가 지정한 transform_type에 따라 서로 다른 변환 객체를 반환하는 구조
 
     def __init__(self, transform_type: str) -> None:
-        self.transform_type = transform_type
-        #인자 확인해서 변환 라이브러리를 선택함
+        # 입력받은 transform_type을 소문자로 변환하여 저장
+        self.transform_type = transform_type.lower()
+        # 인자 확인해서 변환 라이브러리를 선택함
 
     def get_transform(self, augment: bool = False, alpha: float = 1.0) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
         """
