@@ -60,8 +60,3 @@ if __name__=='__main__':
         device=device,
         test_dataloader=test_dataloader
     )
-    
-    test_df['target'] = predictions
-    test_df = test_df.reset_index().rename(columns={"index":"ID"})
-    
-    test_df.to_csv("output.csv", index=False)
