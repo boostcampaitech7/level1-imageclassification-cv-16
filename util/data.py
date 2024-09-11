@@ -39,7 +39,7 @@ class CustomDataset(Dataset):
         if not self.is_inference:
             self.targets = data_df['target'].tolist()
 
-    def __len__(self):
+    def __len__(self) -> int: ## 이런걸 전부 포함하도록 하는게 좋음
         # 데이터 개수 반환 함수
         return len(self.image_paths)
     
