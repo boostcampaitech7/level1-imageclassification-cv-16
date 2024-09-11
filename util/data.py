@@ -60,22 +60,38 @@ class CustomDataset(Dataset):
                 temp[target] = 1 # 레이블에 해당하는 위치에 1 나머지는 0
                 target = temp # 반환을 위해 target에 할당
             return img, target # 이미지와 레이블 반환
-    
-    ################################################################## ho_change
-    def print_images(self):
-        fig, axes = plt.subplots(25,20, figsize=[25,20])
-        for i in range(25):
-            for j in range(20):
-                if i==24 and j==19:
-                    axes[i][j].imshow(self.tensors[0][0])
-                    axes[i][j].set_xticks([])
-                    axes[i][j].set_yticks([])
-                    break
-                axes[i][j].imshow(self.tensors[(i+1)*(j+1)][0])
-                axes[i][j].set_xticks([])
-                axes[i][j].set_yticks([])
-    ##################################################################
 
+
+
+def print_image(idx:list | int, train:bool = True):
+    image_paths= pd.read_csv('./data/train.csv').iloc[:, 1] if train else pd.read_csv('./data/test.csv').iloc[:, 0]
+    folder_path= './data/train' if train else './data/test'
+    if type(idx) == list:
+        # # 리스트로 2개의 index 받았을 때 예시
+        # fig, ax = plt.subplots(1,2, figsize=[12,4])
+        # ax[0].imshow(Image.open(os.path.join(folder_path, image_paths[idx[0]])))
+        # ax[1].imshow(Image.open(os.path.join(folder_path, image_paths[idx[1]])))
+        row_size=(len(idx)+1)//2
+        fig, ax = plt.subplots(row_size, 2)
+        num=0
+        for r in range(row_size):
+            for c in range(2):
+                if num == len(idx):
+                    break
+                if row_size == 1:
+                    ax[num].set_xticks([])
+                    ax[num].set_yticks([])
+                    ax[num].imshow(Image.open(os.path.join(folder_path, image_paths[idx[num]])))
+                else:
+                    ax[r][c].set_xticks([])
+                    ax[r][c].set_yticks([])
+                    ax[r][c].imshow(Image.open(os.path.join(folder_path, image_paths[idx[num]])))
+                num+=1
+    else:
+        fig, ax = plt.subplots(1,1, figsize=[12,4])
+        ax.imshow(Image.open(os.path.join(folder_path, image_paths[idx])))
+        ax.set_xticks([])
+        ax.set_yticks([])
 
                
 # # 테스트용
