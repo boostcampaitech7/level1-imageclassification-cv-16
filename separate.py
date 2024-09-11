@@ -10,13 +10,11 @@ class ImageDataPreprocessor:
         source_dir: 원본 이미지가 저장된 디렉토리
         train_dir: train 데이터가 저장될 디렉토
         val_dir: val 데이터가 저장될 디렉토리
-        csv_dir: CSV 파일 저장할 디렉토리
         val_size: 검증 데이터의 비율
         """
         self.source_dir: str = source_dir
         self.train_dir: str = train_dir
         self.val_dir: str = val_dir
-        self.csv_dir: str = csv_dir
         self.val_size: float = val_size
         self._create_dirs()  # 학습 및 검증 디렉토리 생성
         self.image_files: List[str] = self._get_image_files()  # 이미지 파일 리스트 가져오기
@@ -24,7 +22,6 @@ class ImageDataPreprocessor:
     def _create_dirs(self) -> None: #학습, 검증 데이터 및 CSV 파일 디렉토리를 생성
         os.makedirs(self.train_dir, exist_ok=True)
         os.makedirs(self.val_dir, exist_ok=True)
-        os.makedirs(self.csv_dir, exist_ok=True)
 
     def _get_image_files(self) -> List[str]: #원본 dir에서 모든 이미지 파일의 경로 수집하고
         # 이미지 파일 경로 리스트를 리턴함
@@ -57,7 +54,8 @@ class ImageDataPreprocessor:
         file_name: 저장할 CSV 파일의 이름
         """
         df: pd.DataFrame = pd.DataFrame(file_list, columns=['file_path'])
-        df.to_csv(os.path.join(self.csv_dir, file_name), index=False)
+        # CSV 파일을 source_dir(원본 데이터 있는 곳)에 저장
+        df.to_csv(os.path.join(self.source_dir, file_name), index=False)
 
     def process(self) -> None:
         """
@@ -77,13 +75,12 @@ class ImageDataPreprocessor:
 
         print(f"Train data moved to {self.train_dir}")
         print(f"Validation data moved to {self.val_dir}")
-        print(f"CSV files saved to {self.csv_dir}")
+        print(f"CSV files saved to {self.source_dir}")
 
 
 source_directory = './data'  # 원본 이미지가 저장된 디렉토리
 train_directory = './data/train'  # 학습 이미지가 저장될 디렉토리
 val_directory = './data/val'  # 검증 이미지가 저장될 디렉토리
-csv_directory = './data/csv'  # CSV 파일이 저장될 디렉토리
 
 
 preprocessor = ImageDataPreprocessor(source_directory, train_directory, val_directory, csv_directory)
