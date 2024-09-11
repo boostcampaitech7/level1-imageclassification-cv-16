@@ -67,7 +67,9 @@ class CutMixTransforms:
     def __init__(self, alpha=1.0) -> None: #알파: CutMix에서 사용할 베타 분포 파라미터
         self.alpha = alpha
 
-    def __call__(self, image1, image2, label1, label2) -> Tuple[torch.Tensor, torch.Tensor]: #두 개 이미지를 컷믹스
+    #def __call__(self, image1, image2, label1, label2) -> Tuple[torch.Tensor, torch.Tensor]: #두 개 이미지를 컷믹스
+    def __call__(self, image1: torch.Tensor, image2: torch.Tensor, label1: torch.Tensor, label2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+
         lam = random.beta(self.alpha, self.alpha) #베타 분포로 람다 값 생성
         bbx1, bby1, bbx2, bby2 = self.rand_bbox(image1.size(), lam) #랜덤 바운딩 박스 생성
         image1[:, bbx1:bbx2, bby1:bby2] = image2[:, bbx1:bbx2, bby1:bby2] #바운딩 박스 내 영역 교체함
@@ -76,7 +78,7 @@ class CutMixTransforms:
         return image1, mixed_label
 
     @staticmethod
-    def rand_bbox(size, lam) -> Tuple[int, int, int, int]: #람다 값을 기준으로 랜덤한 바운딩 박스 생성
+    def rand_bbox(size: Tuple[int, int, int], lam: float) -> Tuple[int, int, int, int]: #람다 값을 기준으로 랜덤한 바운딩 박스 생성
         W = size[2]
         H = size[1]
         cut_rat = torch.sqrt(1. - lam) #자를 비율 계산
@@ -99,7 +101,7 @@ class MixUpTransforms:
     def __init__(self, alpha=1.0) -> None: #알파: 믹스업에서 사용할 베타 분포의 파라미터
         self.alpha = alpha
 
-    def __call__(self, image1, image2, label1, label2) -> Tuple[torch.Tensor, torch.Tensor]: #두 개 이미지를 믹스업
+    def __call__(self, image1: torch.Tensor, image2: torch.Tensor, label1: torch.Tensor, label2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]: #두 개 이미지를 믹스업
         lam = random.beta(self.alpha, self.alpha)  # 베타 분포로 람다 값 생성
         mixed_image = lam * image1 + (1 - lam) * image2  # 이미지를 섞음
         mixed_label = lam * label1 + (1 - lam) * label2  # 레이블을 섞음
