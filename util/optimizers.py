@@ -14,5 +14,4 @@ def get_optimizer(model, optimizer_name, lr=1e-3, **kwargs):
 optimizer_name = 'adam'  (adam, sgd, rmsprop)
 learning_rate = 1e-3
 optimizer = get_optimizer(model, optimizer_name, lr=learning_rate)
-
 """
