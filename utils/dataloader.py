@@ -2,78 +2,64 @@ import os
 import torch
 import pandas as pd
 import numpy as np
+from typing import Callable
+import cv2 # <= image load를 위해 필요함. 사용하기 위해 pip install opencv-python 필요
 from torch.utils.data import Dataset
 from torchvision import transforms, utils
 from PIL import Image
 import matplotlib.pyplot as plt
 
 class CustomDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None, ho_path='../data'):
-        ## 초기화 함수
-        ## 사용할 변수 : self.labels, self.root_dir, self.transform
-        self.labels = os.listdir(root_dir)
+    def __init__(
+        self, 
+        root_dir: str,
+        data_df: pd.DataFrame, 
+        transform: Callable = None, 
+        is_inference: bool = False,
+        one_hot: bool = False  
+        ):
+        # CustomDataset 초기화
+        # 매개변수 
+        #  - root_dir : 데이터 저장 위치
+        #  - data_df : 이미지 정보 관련 데이터셋
+        #  - transform : 적용 이미지 변환 처리
+        #  - is_inference : True => 추론(inference) False => 학습(Training)
+        
         self.root_dir = root_dir
+        self.data_df = data_df
         self.transform = transform
+        self.is_inference = is_inference
+        self.image_paths = data_df['image_path'].tolist()
+        self.one_hot = one_hot
+        if self.one_hot:
+            # class 개수 크기의 one_hot template 생성 
+            # 비효율적일 수 있음 / target이 정수인 경우에만 동작함
+            self.one_hot_template = [0 for i in range(len(data_df['target'].unique()))]
         
-        self.label_to_idx = {label:i for i, label in enumerate(self.labels)}
-        
-        self.data_dir = []
-        
-        
-    ################################################################## ho_change
-        # for label in self.labels:
-        #     data_path = os.path.join(root_dir, label)
-        #     data_files = os.listdir(data_path)
-        #     for file_name in data_files: 
-        #         self.data_dir.append([os.path.join(data_path, file_name), label])
-
-        self.train_path = os.path.join(ho_path, 'train')
-        self.df_path = os.path.join(ho_path, 'train.csv')
-        self.trans = transforms.Compose(
-            [
-                transforms.Resize([224,224]), 
-                transforms.ToTensor(),
-                # transforms.Normalize((0.485,0.456,0.406), (0.229, 0.224, 0.225))     ######## transforms에 normalize 켜면 그림 형체 알아보기 힘듦 : 논의할 내용
-                ]
-            )
-        df = pd.read_csv(self.df_path)
-        self.img_path = {i:[] for i in df['target'].unique()}
-        for i in df['class_name'].unique():
-            rows = df[df['class_name']==i]
-            for image_path, target in zip(rows['image_path'], rows['target']):
-                self.img_path[target].append(os.path.join(self.train_path, image_path))
-
-        self.tensors={i:[] for i in range(500)}
-        for i in self.img_path.keys():
-            for path in self.img_path[i]:
-                image=Image.open(path).convert('RGB')
-                image = self.trans(image).transpose(1,2).transpose(0,2)
-                self.tensors[i].append(image)
-    #################################################################
+        if not self.is_inference:
+            self.targets = data_df['target'].tolist()
 
     def __len__(self):
-        ## 데이터 개수 반환 함수
-        return len(self.data_dir)
+        # 데이터 개수 반환 함수
+        return len(self.image_paths)
     
     def __getitem__(self, idx):
-        ## 데이터 증강 기법을 적용한 특정 인덱스의 입력 x와 레이블 y 반환 함수
-        ## 반환 값 : dict형의 {x, y}
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        # 텐서  -> 리스트로 변환
+        # 전달 받은 인덱스에 해당하는 이미지 로드 및 변환 적용 후 반환
+        # 반환 값 : is_inference=False => 이미지, 레이블, is_inference=True => 이미지
+        img_path = os.path.join(self.root_dir, self.image_paths[idx]) # 완전한 이미지 path로 만들기
+        img = cv2.imread(img_path, cv2.IMREAD_COLOR) # BGR 컬러 포맷인 numpy 배열로 읽어옴
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # BGR 포맷을 RGB 포맷으로 변환
+        img = self.transform(img) # 이미지 변환 수행
         
-        img_path, label = self.data_dir[idx]
-
-        # 이미지 채널 수 유지하니까 1로 만들어서 흑백
-        image = Image.open(img_path).convert('RGB')
-
-        label_idx = self.label_to_idx[label]
-
-        # 데이터 증강
-        if self.transform:
-            image = self.transform(image)
-
-        return image, label_idx
+        if self.is_inference: # 추론 시
+            return img # 이미지만 반환
+        else: # 학습 시
+            target = self.targets[idx] # 해당 이미지의 레이블
+            if self.one_hot: # One_hot으로 반환하고자 하는 경우
+                temp = self.one_hot_template.copy() # template을 가져옴
+                temp[target] = 1 # 레이블에 해당하는 위치에 1 나머지는 0
+                target = temp # 반환을 위해 target에 할당
+            return img, target # 이미지와 레이블 반환
     
     ################################################################## ho_change
     def print_images(self):
@@ -94,11 +80,28 @@ class CustomDataset(Dataset):
                
 # # 테스트용
 # def test(csv_file=None, root_dir=None, transform=None):
-#     CD = CustomDataset(csv_file, root_dir, transform)
+#     df = pd.read_csv(csv_file)
+#     train = CustomDataset(root_dir, df, transform)
+#     test = CustomDataset(root_dir, df, transform, True)
+    
+#     print("testing for train & test")
+#     img, target = train.__getitem__(0)
+#     print(f"train idx 0 : {img.shape}, {target}")
+#     img = test.__getitem__(0)
+#     print(f"train idx 0 : {img.shape}")
+    
+#     one_hot_train = CustomDataset(root_dir, df, transform, one_hot=True)
+
+#     print("testing for train one_hot")
+#     img, target = one_hot_train.__getitem__(0)
+#     print(f"train idx 0 : {img.shape}, {target}")
+#     img, target = one_hot_train.__getitem__(1)
+#     print(f"train idx 1 : {img.shape}, {target}")
+    
     
 # transform = transforms.Compose([
 #     transforms.ToTensor(),
 #     # transforms.Normalize((0.485,0.456,0.406), (0.229, 0.224, 0.225))
 # ])
 
-# test("", "./data", transform)
+# test("data/test_sample.csv", "./data", transform)
