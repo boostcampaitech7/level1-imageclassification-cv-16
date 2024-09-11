@@ -29,9 +29,7 @@ def inference(
 
             predictions.extend(preds.cpu().detach().numpy())
     
-    test_info['target'] = predictions
-    test_info = test_info.reset_index().rename(columns = {"index": "ID"})
-    test_info.to_csv("output.csv", index=False)
+    return predictions
 
 if __name__=='__main__':
     # 추론 데이터의 경로와 정보를 가진 파일의 경로를 설정.
@@ -60,3 +58,7 @@ if __name__=='__main__':
         device=device,
         test_dataloader=test_dataloader
     )
+    
+    test_df['target'] = predictions
+    test_df = test_df.reset_index().rename(columns = {"index": "ID"})
+    test_df.to_csv("output.csv", index=False)
