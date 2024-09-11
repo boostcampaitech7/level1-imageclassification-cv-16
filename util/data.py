@@ -76,11 +76,16 @@ def print_image(idx:list | int, train:bool = True):
         num=0
         for r in range(row_size):
             for c in range(2):
-                ax[r][c].set_xticks([])
-                ax[r][c].set_yticks([])
                 if num == len(idx):
                     break
-                ax[r][c].imshow(Image.open(os.path.join(folder_path, image_paths[idx[num]])))
+                if row_size == 1:
+                    ax[num].set_xticks([])
+                    ax[num].set_yticks([])
+                    ax[num].imshow(Image.open(os.path.join(folder_path, image_paths[idx[num]])))
+                else:
+                    ax[r][c].set_xticks([])
+                    ax[r][c].set_yticks([])
+                    ax[r][c].imshow(Image.open(os.path.join(folder_path, image_paths[idx[num]])))
                 num+=1
     else:
         fig, ax = plt.subplots(1,1, figsize=[12,4])
