@@ -5,77 +5,160 @@ import numpy as np
 from typing import Callable
 import cv2 # <= image load를 위해 필요함. 사용하기 위해 pip install opencv-python 필요
 from torch.utils.data import Dataset
+import torchvision
 from torchvision import transforms, utils
 from PIL import Image
 import matplotlib.pyplot as plt
 
-class CustomDataset(Dataset):
-    def __init__(
-        self, 
-        root_dir: str,
-        data_df: pd.DataFrame, 
-        transform: Callable = None, 
-        is_inference: bool = False,
-        one_hot: bool = False  
-        ):
-        # CustomDataset 초기화
-        # 매개변수 
-        #  - root_dir : 데이터 저장 위치
-        #  - data_df : 이미지 정보 관련 데이터셋
-        #  - transform : 적용 이미지 변환 처리
-        #  - is_inference : True => 추론(inference) False => 학습(Training)
+# class CustomDataset(Dataset):
+#     def __init__(
+#         self, 
+#         root_dir: str,
+#         data_df: pd.DataFrame, 
+#         transform: Callable = None, 
+#         is_inference: bool = False,
+#         one_hot: bool = False  
+#         ):
+#         # CustomDataset 초기화
+#         # 매개변수 
+#         #  - root_dir : 데이터 저장 위치
+#         #  - data_df : 이미지 정보 관련 데이터셋
+#         #  - transform : 적용 이미지 변환 처리
+#         #  - is_inference : True => 추론(inference) False => 학습(Training)
         
-        self.root_dir = root_dir
-        self.data_df = data_df
-        self.transform = transform
-        self.is_inference = is_inference
-        self.image_paths = data_df['image_path'].tolist()
-        self.one_hot = one_hot
-        if self.one_hot:
-            # class 개수 크기의 one_hot template 생성 
-            # 비효율적일 수 있음 / target이 정수인 경우에만 동작함
-            self.one_hot_template = [0 for i in range(len(data_df['target'].unique()))]
+#         self.root_dir = root_dir
+#         self.data_df = data_df
+#         self.transform = transform
+#         self.is_inference = is_inference
+#         self.image_paths = data_df['image_path'].tolist()
+#         self.one_hot = one_hot
+#         if self.one_hot:
+#             # class 개수 크기의 one_hot template 생성 
+#             # 비효율적일 수 있음 / target이 정수인 경우에만 동작함
+#             self.one_hot_template = [0 for i in range(len(data_df['target'].unique()))]
         
-        if not self.is_inference:
-            self.targets = data_df['target'].tolist()
+#         if not self.is_inference:
+#             self.targets = data_df['target'].tolist()
 
-    def __len__(self) -> int: ## 이런걸 전부 포함하도록 하는게 좋음
-        # 데이터 개수 반환 함수
-        return len(self.image_paths)
+#     def __len__(self) -> int: ## 이런걸 전부 포함하도록 하는게 좋음
+#         # 데이터 개수 반환 함수
+#         return len(self.image_paths)
     
-    def __getitem__(self, idx):
-        # 전달 받은 인덱스에 해당하는 이미지 로드 및 변환 적용 후 반환
-        # 반환 값 : is_inference=False => 이미지, 레이블, is_inference=True => 이미지
-        img_path = os.path.join(self.root_dir, self.image_paths[idx]) # 완전한 이미지 path로 만들기
-        img = cv2.imread(img_path, cv2.IMREAD_COLOR) # BGR 컬러 포맷인 numpy 배열로 읽어옴
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # BGR 포맷을 RGB 포맷으로 변환
-        img = self.transform(img) # 이미지 변환 수행
+#     def __getitem__(self, idx):
+#         # 전달 받은 인덱스에 해당하는 이미지 로드 및 변환 적용 후 반환
+#         # 반환 값 : is_inference=False => 이미지, 레이블, is_inference=True => 이미지
+#         img_path = os.path.join(self.root_dir, self.image_paths[idx]) # 완전한 이미지 path로 만들기
+#         img = cv2.imread(img_path, cv2.IMREAD_COLOR) # BGR 컬러 포맷인 numpy 배열로 읽어옴
+#         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # BGR 포맷을 RGB 포맷으로 변환
+#         img = self.transform(img) # 이미지 변환 수행
         
-        if self.is_inference: # 추론 시
-            return img # 이미지만 반환
-        else: # 학습 시
-            target = self.targets[idx] # 해당 이미지의 레이블
-            if self.one_hot: # One_hot으로 반환하고자 하는 경우
-                temp = self.one_hot_template.copy() # template을 가져옴
-                temp[target] = 1 # 레이블에 해당하는 위치에 1 나머지는 0
-                target = temp # 반환을 위해 target에 할당
-            return img, target # 이미지와 레이블 반환
+#         if self.is_inference: # 추론 시
+#             return img # 이미지만 반환
+#         else: # 학습 시
+#             target = self.targets[idx] # 해당 이미지의 레이블
+#             if self.one_hot: # One_hot으로 반환하고자 하는 경우
+#                 temp = self.one_hot_template.copy() # template을 가져옴
+#                 temp[target] = 1 # 레이블에 해당하는 위치에 1 나머지는 0
+#                 target = temp # 반환을 위해 target에 할당
+#             return img, target # 이미지와 레이블 반환
     
-    ################################################################## ho_change
-    def print_images(self):
-        fig, axes = plt.subplots(25,20, figsize=[25,20])
-        for i in range(25):
-            for j in range(20):
-                if i==24 and j==19:
-                    axes[i][j].imshow(self.tensors[0][0])
-                    axes[i][j].set_xticks([])
-                    axes[i][j].set_yticks([])
-                    break
-                axes[i][j].imshow(self.tensors[(i+1)*(j+1)][0])
-                axes[i][j].set_xticks([])
-                axes[i][j].set_yticks([])
-    ##################################################################
+#     def print_images(self):
+#         fig, axes = plt.subplots(25,20, figsize=[25,20])
+#         for i in range(25):
+#             for j in range(20):
+#                 if i==24 and j==19:
+#                     axes[i][j].imshow(self.tensors[0][0])
+#                     axes[i][j].set_xticks([])
+#                     axes[i][j].set_yticks([])
+#                     break
+#                 axes[i][j].imshow(self.tensors[(i+1)*(j+1)][0])
+#                 axes[i][j].set_xticks([])
+#                 axes[i][j].set_yticks([])
 
+
+class HoDataset(Dataset):
+    def __init__(self, mode, 
+                 transform:torchvision.transforms=transforms.Compose([
+                     transforms.Resize([224,224]), 
+                     transforms.ToTensor(),
+                     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+                     ):
+        
+        '''
+        mode: 'train', 'test'
+        '''
+        super(HoDataset, self).__init__()
+        self.transform=transform
+        self.mode = mode
+        self.df = pd.read_csv((os.path.join('./data',self.mode))+'.csv')
+
+        # 경로 줄 쫙 세워
+        self.y_paths=[]
+        class_col=None
+        if self.mode == 'train':
+            class_col = self.df.iloc[:,1]
+            self.labels=self.df.iloc[:, 2]
+        else:        # 'test'
+            class_col = self.df.iloc[:,0]
+
+        for i in class_col:
+            self.y_paths.append(os.path.join(os.path.join('./data/',mode),i))
+
+        
+        
+
+    def __getitem__(self, idx:int | list):
+        ## transpose: [224,224,3] shape으로 마지막 단에 컬러 채널 있어야 그림 그려짐
+        self.x_data=[]
+        self.y_data=[]
+
+        if type(idx) == int:
+            tmp = torch.from_numpy(np.array(Image.open(self.y_paths[idx])))
+            if len(tmp.shape) != 3:
+                tmp=tmp.unsqueeze(2).repeat(1,1,3)
+            tmp=tmp.transpose(0,2)
+            tmp = self.transform(transforms.ToPILImage()(tmp))
+            
+            self.x_data.append(tmp.transpose(0,2))
+            if self.mode=='train':
+                self.y_data.append(self.labels[idx])
+
+        elif type(idx) == tuple:
+            for i in idx:
+                tmp = torch.from_numpy(np.array(Image.open(self.y_paths[i])))
+                if len(tmp.shape) != 3:
+                    tmp=tmp.unsqueeze(2).repeat(1,1,3)
+                tmp=tmp.transpose(0,2)
+                tmp = self.transform(transforms.ToPILImage()(tmp))
+                
+                self.x_data.append(tmp.transpose(0,2))
+                if self.mode=='train':
+                    self.y_data.append(self.labels[i])
+
+        elif type(idx) == slice:
+            start = 0 if not idx.start else idx.start
+            stop = 0 if not idx.stop else idx.stop
+            step = 1 if not idx.step else idx.step
+            
+            for i in range(start, stop, step):
+                tmp = torch.from_numpy(np.array(Image.open(self.y_paths[i])))
+                if len(tmp.shape) != 3:
+                    tmp=tmp.unsqueeze(2).repeat(1,1,3)
+                tmp=tmp.transpose(0,2)
+                tmp = self.transform(transforms.ToPILImage()(tmp))
+                
+                self.x_data.append(tmp.transpose(0,2))
+                if self.mode=='train':
+                    self.y_data.append(self.labels[i])
+                
+        else:
+            print(type(idx))
+            raise Exception('Give me arguments which has INT or LIST type')
+        
+        if self.mode=='train':
+            return self.x_data, self.y_data
+        else:
+            return self.x_data
 
                
 # # 테스트용
