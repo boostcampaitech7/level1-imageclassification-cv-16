@@ -62,8 +62,7 @@ class CustomDataset(Dataset):
             return img, target # 이미지와 레이블 반환
 
 
-
-def print_image(idx:list | int, train:bool = True):
+def print_image(idx:list, train:bool = True):
     image_paths= pd.read_csv('./data/train.csv').iloc[:, 1] if train else pd.read_csv('./data/test.csv').iloc[:, 0]
     folder_path= './data/train' if train else './data/test'
     if type(idx) == list:

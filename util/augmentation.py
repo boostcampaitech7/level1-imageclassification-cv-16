@@ -37,21 +37,22 @@ class AlbumentationsTransforms:
     def __init__(self, augment=False) -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
         self.augment = augment
 
-        # 증강 없는 기본 트랜스폼
-        self.base_transform = A.Compose([
-            A.Resize(256, 256),
+        common_transform = [
+            A.Resize(224, 224),
+            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # 정규화
             ToTensorV2() #이미지를 텐서로 변환
-        ])
+        ]
+
+        # 증강 없는 기본 트랜스폼
+        self.base_transform = A.Compose(common_transform)
 
         # Albumentations 증강을 사용한 트랜스폼 (랜덤 자르기, 플립, 회전...)
         self.augment_transform = A.Compose([
-            A.RandomResizedCrop(256, 256), #랜덤하게 크롭하고 256x256로 리사이즈
             A.HorizontalFlip(p=0.5), #수평 플립
             A.VerticalFlip(p=0.5), #수직 플립
             A.Rotate(limit=45), #45도 제한 랜덤 회전
             A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
-            ToTensorV2(), #이미지를 텐서로 변환
-        ])
+        ] + common_transform)
 
     def __call__(self, image) -> torch.Tensor: #이미지에 트랜스폼 적용
         if self.augment:

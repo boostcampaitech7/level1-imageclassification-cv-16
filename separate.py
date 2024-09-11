@@ -80,9 +80,6 @@ class ImageDataPreprocessor:
         print(f"CSV files saved to {self.csv_dir}")
 
 
-"""
-사용 예시
-
 source_directory = './data'  # 원본 이미지가 저장된 디렉토리
 train_directory = './data/train'  # 학습 이미지가 저장될 디렉토리
 val_directory = './data/val'  # 검증 이미지가 저장될 디렉토리
@@ -91,6 +88,4 @@ csv_directory = './data/csv'  # CSV 파일이 저장될 디렉토리
 
 preprocessor = ImageDataPreprocessor(source_directory, train_directory, val_directory, csv_directory)
 preprocessor.process()
-
-"""
 

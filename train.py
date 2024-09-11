@@ -6,6 +6,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import torch.optim as optim
 
+from sklearn.model_selection import train_test_split
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -55,12 +57,19 @@ if __name__=='__main__':
     
     transform_selector = TransformSelector(transform_type = "albumentations")
     
-    train_df = pd.read_csv(train_data_info_file)
-    val_df = pd.read_csv(val_data_info_file)
+    # train_df = pd.read_csv(train_data_info_file)
+    # val_df = pd.read_csv(val_data_info_file)
     
+    train_info = pd.read_csv(train_data_info_file)
+
+    train_df, val_df = train_test_split(
+        train_info, 
+        test_size=0.2,
+        stratify=train_info['target']
+    )
     
-    train_transform = transform_selector.get_transform(is_train=True)
-    val_transform = transform_selector.get_transform(is_train=False)
+    train_transform = transform_selector.get_transform(augment=False)
+    val_transform = transform_selector.get_transform(augment=False)
     
     ## <추후 수정 예정>
     train_dataset = CustomDataset(
@@ -70,7 +79,7 @@ if __name__=='__main__':
     )
     
     val_dataset = CustomDataset(
-        root_dir = val_data_dir,
+        root_dir = train_data_dir,
         data_df = val_df,
         transform = val_transform
     )

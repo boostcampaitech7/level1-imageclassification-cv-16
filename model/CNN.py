@@ -11,6 +11,7 @@ class SimpleCNN(nn.Module):
         self.fc1 = nn.Linear(128 * 28 * 28, 512)
         self.fc2 = nn.Linear(512, num_classes)
         self.relu = nn.ReLU()
+        self.softmax = nn.Softmax()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.pool(self.relu(self.conv1(x)))
@@ -18,6 +19,6 @@ class SimpleCNN(nn.Module):
         x = self.pool(self.relu(self.conv3(x)))
         x = torch.flatten(x, 1)
         x = self.relu(self.fc1(x))
-        x = self.fc2(x)
-        
+        x = self.softmax(self.fc2(x))
+            
         return x

@@ -43,6 +43,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.result_path = result_path  # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
+        
+        self.best_val_loss = float('inf')
+        self.checkpoint_dir = "./checkpoints"
 
     def _save_checkpoint(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
