@@ -6,6 +6,15 @@ import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 
+from model import modelSelection
+
+from util.data import CustomDataset
+from util.augmentation import TransformSelector
+from util.optimizers import get_optimizer
+from trainer import Trainer
+
+from model.modelSelection import ModelSelector
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def inference(
@@ -33,20 +42,36 @@ def inference(
 
 if __name__=='__main__':
     # 추론 데이터의 경로와 정보를 가진 파일의 경로를 설정.
-    testdata_dir = "./data/test"
-    testdata_info_file = "./data/test.csv"
-    save_result_path = "./train_result"
+    test_data_dir = "./data/test"
+    test_data_info_file = "./data/test.csv"
+    save_result_path = "./checkpoint" # "./train_result"
     
     # 추론 데이터의 class, image path, target에 대한 정보가 들어있는 csv파일을 읽기.
-    test_df = pd.read_csv(testdata_info_file)
+    test_df = pd.read_csv(test_data_info_file)
 
     num_classes = 500
     
-    transform = None
+    transform_selector = TransformSelector(transform_type="albumentations")
+    transform = transform_selector.get_transform(is_train=False)
     
-    test_dataloader = None
+    test_dataset = CustomDataset(
+        root_dir=test_data_dir,
+        data_df=test_df,
+        transform=transform
+    )
     
-    model = None
+    test_dataloader = DataLoader(
+        test_dataset,
+        batch_size=64,
+        shuffle=False,
+        drop_last=False
+    )
+    model_selector = ModelSelector(
+        model_type="cnn",
+        num_classes=num_classes
+    )
+    model = model_selector.get_model()
+    
     model.load_state_dict(
         torch.load(
             os.path.join(save_result_path, "best_model.pt"),
