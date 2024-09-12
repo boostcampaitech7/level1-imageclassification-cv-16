@@ -44,7 +44,7 @@ if __name__=='__main__':
     # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정.
     train_data_dir = "./data/train"
     val_data_dir = "./data/val"
-    train_data_info_file = "./data/train_samples.csv"
+    train_data_info_file = "./data/train.csv"
     val_data_info_file = "./data/val.csv"
     save_result_path = "./train_result"
     
