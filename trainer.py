@@ -125,7 +125,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             train_loss, train_acc = self.train_epoch()
             val_loss, val_acc = self.validate()
             # 볼 때 너무 길면 자르기
-            print(f"Epoch {epoch+1}, Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.3f}, Validation Loss: {val_loss:.4f} | Val Acc: {val_acc:.3f}\n")
+            print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
