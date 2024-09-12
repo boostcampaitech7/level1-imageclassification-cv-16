@@ -18,6 +18,6 @@ class SimpleCNN(nn.Module):
         x = self.pool(self.relu(self.conv3(x)))
         x = torch.flatten(x, 1)
         x = self.relu(self.fc1(x))
-        x = self.fc2(x)
-        
+        x = self.self.fc2(x)
+            
         return x
