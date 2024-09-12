@@ -75,10 +75,13 @@ class HoDataset(Dataset):
             root_dir (string): 모든 이미지가 존재하는 디렉토리 경로
             transform (callable, optional): 샘플에 적용될 Optional transform
         '''
+
+        self.mode = 'train' if 'train' in root_dir else 'test'
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
         self.transform = transform
         self.batch_size=batch_size
+        ## test: root_dir = ./data/test
 
     def __len__(self):
         return len(self.data)
@@ -87,7 +90,11 @@ class HoDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        img_name = os.path.join(self.root_dir, self.data.iloc[idx,1])
+        if self.mode == 'train':
+            img_name = os.path.join(self.root_dir, self.data.iloc[idx,1])
+            label = self.data.iloc[idx, 2]
+        else:
+            img_name = os.path.join(self.root_dir, self.data.iloc[idx,0])
         image = Image.open(img_name)
 
         img_np=np.array(image)
@@ -98,9 +105,11 @@ class HoDataset(Dataset):
 
         img_tensor = self.transform(transforms.ToPILImage()(img_np)).transpose(1,2).transpose(0,2)
 
-        label = self.data.iloc[idx, 2]
         
-        return img_tensor, label
+        if self.mode == 'train':
+            return img_tensor, label
+        else:
+            return img_tensor
     
 def HoDataLoad(csv_path:str='./data/train.csv', batch_size:int=32, shuffle:bool=False) -> DataLoader:
     mode = 'train' if 'train' in csv_path else 'test'
