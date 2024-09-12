@@ -48,7 +48,7 @@ if __name__=='__main__':
     val_data_info_file = "./data/val.csv"
     save_result_path = "./train_result"
     
-    epochs = 5
+    epochs = 6
     batch_size = 16
     lr = 0.001
     num_classes = 11
