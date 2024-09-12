@@ -94,12 +94,7 @@ def print_image(idx:list, train:bool = True):
         ax.set_yticks([])
 
 class HoDataset(Dataset):
-    def __init__(self, csv_file, root_dir, batch_size=32, 
-                 transform=transforms.Compose([
-                     transforms.Resize([224,224]),
-                     transforms.ToTensor(),
-                     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-                     ])):
+    def __init__(self, csv_file, root_dir, batch_size=32, is_train:bool=False):
         '''
         Args:
             csv_file (string): csv 파일 경로
@@ -107,10 +102,9 @@ class HoDataset(Dataset):
             transform (callable, optional): 샘플에 적용될 Optional transform
         '''
 
-        self.mode = 'train' if 'train' in root_dir else 'test'
+        self.mode = 'train' if is_train else 'test'
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
-        self.transform = transform
         self.batch_size=batch_size
         ## test: root_dir = ./data/test
 
@@ -134,7 +128,7 @@ class HoDataset(Dataset):
             img_np = np.repeat(img_np, 3, axis=2)
 
 
-        img_tensor = self.transform(transforms.ToPILImage()(img_np)).transpose(1,2).transpose(0,2)
+        img_tensor = self.transform(transforms.ToPILImage()(img_np))
 
         
         if self.mode == 'train':
@@ -142,9 +136,9 @@ class HoDataset(Dataset):
         else:
             return img_tensor
     
-def HoDataLoad(csv_path:str='./data/train.csv', batch_size:int=32, shuffle:bool=False) -> DataLoader:
-    mode = 'train' if 'train' in csv_path else 'test'
-    dataset = HoDataset(csv_file=csv_path, root_dir=os.path.join('./data', mode))
+def HoDataLoad(csv_path:str='./data', root_dir:str='./data/test', is_train:bool=False, batch_size:int=32, shuffle:bool=False) -> DataLoader:
+    mode = 'train' if is_train else 'test'
+    dataset = HoDataset(csv_file=csv_path, root_dir=root_dir, batch_size=batch_size, is_train=is_train)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
     return dataloader
 
