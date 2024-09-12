@@ -72,6 +72,7 @@ def run_train():
         batch_size=batch_size,
         shuffle=True
     )
+    
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=batch_size,
