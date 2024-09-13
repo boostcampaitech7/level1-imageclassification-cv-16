@@ -109,6 +109,8 @@ data/
 input/
 saved/
 datasets/
+/data.tar.gz
+._data
 
 # editor, os cache directory
 .vscode/
