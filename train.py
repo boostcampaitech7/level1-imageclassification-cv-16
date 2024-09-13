@@ -54,24 +54,29 @@ def run_train():
     train_transform = transform_selector.get_transform(augment=False)
     val_transform = transform_selector.get_transform(augment=False)
     
-    ############################### <추후 수정 예정>
-    train_dataloader = HoDataLoad(
-                                './data', 
-                                './data/train', 
-                                is_train=True, 
-                                batch_size=batch_size, 
-                                shuffle=True, 
-                                val_ratio=0.2, 
-                                random_state=seed)
-    val_dataloader = HoDataLoad(
-                                './data',
-                                './data/train',
-                                is_train=True,
-                                batch_size=batch_size,
-                                shuffle=False,
-                                val_ratio=0.2,
-                                random_state=seed)
-    ############################### </추후 수정 예정>
+    train_dataset = CustomDataset(
+        root_dir = train_data_dir,
+        data_df = train_df,
+        transform = train_transform
+    )
+    
+    val_dataset = CustomDataset(
+        root_dir = train_data_dir,
+        data_df = val_df,
+        transform = val_transform
+    )
+    
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True
+    )
+    
+    val_dataloader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False
+    )
 
     model_selector = ModelSelector("timm", num_classes, 
                                     model_name='resnet18', pretrained=True)    
