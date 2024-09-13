@@ -1,22 +1,11 @@
 # 필요 library들을 import합니다.
 import os
-from typing import Tuple, Any, Callable, List, Optional, Union
-
-import cv2
-import timm
 import torch
-import numpy as np
-import pandas as pd
-import albumentations as A
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import models, datasets, transforms
 from tqdm.auto import tqdm
-from torch.utils.data import DataLoader, Dataset
-from sklearn.model_selection import train_test_split
-from albumentations.pytorch import ToTensorV2
-from util.checkpoints import load_checkpoint, save_checkpoint
+from torch.utils.data import DataLoader
+from util.checkpoints import save_checkpoint
 
 class Trainer: # 변수 넣으면 바로 학습되도록
     def __init__( # 여긴 config로 나중에 빼야하는지 이걸 유지하는지
@@ -29,7 +18,10 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         scheduler: optim.lr_scheduler,
         loss_fn: torch.nn.modules.loss._Loss, 
         epochs: int,
-        result_path: str
+        result_path: str,
+        train_total: int,
+        val_total: int,
+        r_epoch: int = 0
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -43,6 +35,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.result_path = result_path  # 모델 저장 경로
         self.best_models = [] # 가장 좋은 상위 3개 모델의 정보를 저장할 리스트
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
+        self.train_total = train_total
+        self.val_total = val_total
+        self.r_epoch = r_epoch
         
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
@@ -65,27 +60,26 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
-    def train_epoch(self) -> float:
+    def train_epoch(self, train_loader) -> float:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
         
         total_loss = 0.0
         train_correct = 0
-        progress_bar = tqdm(self.train_loader, desc="Training", leave=False)
+        progress_bar = tqdm(train_loader, desc="Training", leave=False)
         
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
             self.optimizer.zero_grad()
-            outputs = self.model(images) # pred
+            outputs = self.model(images)
             
             loss = self.loss_fn(outputs, targets)
             loss.backward()
             self.optimizer.step()
-            self.scheduler.step() # 스케줄러 더 알아보기
+            self.scheduler.step()
             
-            total_loss += loss.item() # 손실 계산
-            
-            # 정확도 계산
+            total_loss += loss.item() * targets.shape[0]
+
             outputs = torch.argmax(outputs, dim = 1)
             acc = (outputs == targets).sum().item()
             train_correct += acc
@@ -93,14 +87,14 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         # 이거 멘토링 때 데이터셋으로 불러야 총 데이터 개수라지않았나??
         # train_loader.dataset 전체 데이터셋에 대한 정확도 계산
-        return total_loss / len(self.train_loader), train_correct/len(self.train_loader.dataset)
+        return total_loss, train_correct
 
-    def validate(self) -> float:
+    def validate(self, val_loader) -> float:
         # 모델의 검증을 진행
         self.model.eval()
         val_correct = 0
         total_loss = 0.0
-        progress_bar = tqdm(self.val_loader, desc="Validating", leave=False)
+        progress_bar = tqdm(val_loader, desc="Validating", leave=False)
         
         with torch.no_grad():
             for images, targets in progress_bar:
@@ -110,21 +104,33 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 
                 loss = self.loss_fn(outputs, targets)
                 
-                total_loss += loss.item()
+                total_loss += loss.item() * targets.shape[0]
                 outputs = torch.argmax(outputs, dim = 1)
                 val_correct += (outputs == targets).sum().item()
                 progress_bar.set_postfix(loss=loss.item())
         
-        return total_loss / len(self.val_loader), val_correct / len(self.val_loader.dataset) # 전체 데이터셋에 대한 정확도
+        return total_loss, val_correct
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
         for epoch in range(self.epochs):
+            train_loss, train_acc = 0.0, 0.0
+            val_loss, val_acc = 0.0, 0.0
             print(f"Epoch {epoch+1}/{self.epochs}")
             
-            train_loss, train_acc = self.train_epoch()
-            val_loss, val_acc = self.validate()
-            # 볼 때 너무 길면 자르기
+            if epoch < self.epochs - self.r_epoch:
+                train_loss, train_acc = self.train_epoch(self.train_loader)
+                val_loss, val_acc = self.validate(self.val_loader)
+
+                train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
+                val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
+            else:
+                train_loss, train_acc = self.train_epoch(self.val_loader)
+                val_loss, val_acc = self.validate(self.train_loader)
+            
+                train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
+                val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
+            
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
