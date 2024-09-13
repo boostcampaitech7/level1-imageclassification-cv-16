@@ -5,14 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
-
-from model import modelSelection
-
 from util.data import CustomDataset
 from util.augmentation import TransformSelector
-from util.optimizers import get_optimizer
-from trainer import Trainer
-
 from model.modelSelection import ModelSelector
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,12 +14,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def inference(
         model: nn.Module, 
         device: torch.device, 
-        test_loader: DataLoader) -> None:
+        test_loader: DataLoader
+    ) -> None:
     
     model.to(device)
     model.eval()
 
-    total_loss = 0.0
     predictions = []
     
     with torch.no_grad():
@@ -44,7 +38,7 @@ if __name__=='__main__':
     # 추론 데이터의 경로와 정보를 가진 파일의 경로를 설정.
     test_data_dir = "./data/test"
     test_data_info_file = "./data/test.csv"
-    save_result_path = "./checkpoint" # "./train_result"
+    save_result_path = "./checkpoints" # "./train_result"
     
     # 추론 데이터의 class, image path, target에 대한 정보가 들어있는 csv파일을 읽기.
     test_df = pd.read_csv(test_data_info_file)
@@ -67,15 +61,21 @@ if __name__=='__main__':
         shuffle=False,
         drop_last=False
     )
-    
-    model_selector = model_selector = ModelSelector("timm", num_classes, 
-                                    model_name='resnet18', pretrained=True) 
+
+    model_selector = ModelSelector(
+        model_type="timm",
+        num_classes=num_classes,
+        model_name="resnet50",
+        pretrained=True
+    )
+
     model = model_selector.get_model()
     
     model.load_state_dict(
         torch.load(
-            "checkpoints\\final_checkpoint.pth", 
-            # os.path.join(save_result_path, "best_model.pt"),
+
+            os.path.join(save_result_path, "final_checkpoint.pth"),
+
             map_location='cpu'
     )['model_state_dict'])
     
@@ -88,3 +88,4 @@ if __name__=='__main__':
     test_df['target'] = predictions
     test_df = test_df.reset_index().rename(columns = {"index": "ID"})
     test_df.to_csv("output.csv", index=False)
+    print("create output.csv")

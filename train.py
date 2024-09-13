@@ -34,6 +34,7 @@ def run_train():
     batch_size = 64
     lr = 0.001
     num_classes = 500
+    r_epoch = 2
     
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
     wandb.init(project='my-test-project', config=config)
@@ -111,7 +112,10 @@ def run_train():
         scheduler=scheduler,
         loss_fn=loss,
         epochs=epochs,
-        result_path=save_result_path
+        result_path=save_result_path,
+        train_total=train_df.shape[0],
+        val_total=val_df.shape[0],
+        r_epoch=r_epoch
     )
     
     trainer.train()
