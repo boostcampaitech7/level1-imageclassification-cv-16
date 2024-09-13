@@ -12,8 +12,12 @@ def mse_loss(output, target):
 class CustomLoss(nn.Module):
     def __init__(self):
         super(CustomLoss, self).__init__()
-        # 필요한 초기화 코드
+        self.loss_fn = nn.CrossEntropyLoss()
 
-    def forward(self, output, target):
-        # 손실 함수 계산 코드
-        return loss
+    def forward(
+        self, 
+        outputs: torch.Tensor, 
+        targets: torch.Tensor
+    ) -> torch.Tensor:
+    
+        return self.loss_fn(outputs, targets)
