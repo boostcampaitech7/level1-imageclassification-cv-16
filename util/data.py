@@ -144,7 +144,7 @@ def HoDataLoad(csv_path:str='./data',
                is_train:bool=False, 
                batch_size:int=32, 
                shuffle:bool=False,
-               val_ratio:int=0.2, 
+               val_ratio:float=0.2, 
                random_state:int=42,
                ) -> DataLoader:
     csv_file = os.path.join(csv_path, 'train.csv')
