@@ -69,7 +69,7 @@ if __name__=='__main__':
     )
     
     model_selector = model_selector = ModelSelector("timm", num_classes, 
-                                    model_name='resnet18', pretrained=True)  
+                                    model_name='resnet18', pretrained=True) 
     model = model_selector.get_model()
     
     model.load_state_dict(
