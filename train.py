@@ -44,11 +44,12 @@ def run_train():
     # val_df = pd.read_csv(val_data_info_file)
     
     train_info = pd.read_csv(train_data_info_file)
-
+    
     train_df, val_df = train_test_split(
         train_info, 
         test_size=0.2,
-        stratify=train_info['target']
+        stratify=train_info['target'],
+        random_state=42
     )
     
     train_transform = transform_selector.get_transform(augment=False)

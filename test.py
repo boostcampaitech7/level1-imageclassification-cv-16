@@ -52,12 +52,13 @@ if __name__=='__main__':
     num_classes = 500
     
     transform_selector = TransformSelector(transform_type="albumentations")
-    transform = transform_selector.get_transform(is_train=False)
+    transform = transform_selector.get_transform(augment=False)
     
     test_dataset = CustomDataset(
         root_dir=test_data_dir,
         data_df=test_df,
-        transform=transform
+        transform=transform,
+        is_inference=True
     )
     
     test_dataloader = DataLoader(
@@ -66,22 +67,22 @@ if __name__=='__main__':
         shuffle=False,
         drop_last=False
     )
-    model_selector = ModelSelector(
-        model_type="cnn",
-        num_classes=num_classes
-    )
+    
+    model_selector = model_selector = ModelSelector("timm", num_classes, 
+                                    model_name='resnet18', pretrained=True) 
     model = model_selector.get_model()
     
     model.load_state_dict(
         torch.load(
-            os.path.join(save_result_path, "best_model.pt"),
+            "checkpoints\\final_checkpoint.pth", 
+            # os.path.join(save_result_path, "best_model.pt"),
             map_location='cpu'
-    ))
+    )['model_state_dict'])
     
     predictions = inference(
         model=model,
         device=device,
-        test_dataloader=test_dataloader
+        test_loader=test_dataloader
     )
     
     test_df['target'] = predictions
