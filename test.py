@@ -46,7 +46,7 @@ if __name__=='__main__':
     num_classes = 500
     
     transform_selector = TransformSelector(transform_type="albumentations")
-    transform = transform_selector.get_transform(is_train=False)
+    transform = transform_selector.get_transform(augment=False)
     
     test_dataset = CustomDataset(
         root_dir=test_data_dir,
@@ -61,17 +61,21 @@ if __name__=='__main__':
         shuffle=False,
         drop_last=False
     )
+
     model_selector = ModelSelector(
         model_type="timm",
         num_classes=num_classes,
         model_name="resnet50",
         pretrained=True
     )
+
     model = model_selector.get_model()
     
     model.load_state_dict(
         torch.load(
+
             os.path.join(save_result_path, "final_checkpoint.pth"),
+
             map_location='cpu'
     )['model_state_dict'])
     

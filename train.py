@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from model import modelSelection
 
-from util.data import CustomDataset
+from util.data import CustomDataset, HoDataLoad   # hobbang: Dataset, DataLoader 코드 하나로 합체
 from util.augmentation import TransformSelector
 from util.optimizers import get_optimizer
 from util.losses import CustomLoss
@@ -45,17 +45,17 @@ def run_train():
     # val_df = pd.read_csv(val_data_info_file)
     
     train_info = pd.read_csv(train_data_info_file)
-
+    
     train_df, val_df = train_test_split(
         train_info, 
         test_size=0.2,
-        stratify=train_info['target']
+        stratify=train_info['target'],
+        random_state=42
     )
     
     train_transform = transform_selector.get_transform(augment=False)
     val_transform = transform_selector.get_transform(augment=False)
     
-    ## <추후 수정 예정>
     train_dataset = CustomDataset(
         root_dir = train_data_dir,
         data_df = train_df,
@@ -73,13 +73,12 @@ def run_train():
         batch_size=batch_size,
         shuffle=True
     )
+    
     val_dataloader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=False
     )
-    ## </추후 수정 예정>
-    
 
     model_selector = ModelSelector("timm", num_classes, 
                                     model_name='resnet18', pretrained=True)    
