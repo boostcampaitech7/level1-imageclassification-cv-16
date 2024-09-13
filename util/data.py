@@ -12,12 +12,12 @@ import matplotlib.pyplot as plt
 
 class CustomDataset(Dataset):
     def __init__(
-        self, 
-        root_dir: str,
-        data_df: pd.DataFrame, 
-        transform: Callable = None, 
-        is_inference: bool = False,
-        one_hot: bool = False  
+            self, 
+            root_dir: str,
+            data_df: pd.DataFrame, 
+            transform: Callable=None, 
+            is_inference: bool=False,
+            one_hot: bool=False  
         ):
         # CustomDataset 초기화
         # 매개변수 
@@ -63,7 +63,7 @@ class CustomDataset(Dataset):
             return img, target # 이미지와 레이블 반환
 
 
-def print_image(idx:list, train:bool = True):
+def print_image(idx: list, train: bool=True) -> None:
     image_paths= pd.read_csv('./data/train.csv').iloc[:, 1] if train else pd.read_csv('./data/test.csv').iloc[:, 0]
     folder_path= './data/train' if train else './data/test'
     if type(idx) == list:
@@ -71,9 +71,9 @@ def print_image(idx:list, train:bool = True):
         # fig, ax = plt.subplots(1,2, figsize=[12,4])
         # ax[0].imshow(Image.open(os.path.join(folder_path, image_paths[idx[0]])))
         # ax[1].imshow(Image.open(os.path.join(folder_path, image_paths[idx[1]])))
-        row_size=(len(idx)+1)//2
+        row_size = (len(idx) + 1) // 2
         fig, ax = plt.subplots(row_size, 2)
-        num=0
+        num = 0
         for r in range(row_size):
             for c in range(2):
                 if num == len(idx):
@@ -88,13 +88,13 @@ def print_image(idx:list, train:bool = True):
                     ax[r][c].imshow(Image.open(os.path.join(folder_path, image_paths[idx[num]])))
                 num+=1
     else:
-        fig, ax = plt.subplots(1,1, figsize=[12,4])
+        fig, ax = plt.subplots(1,1, figsize=[12, 4])
         ax.imshow(Image.open(os.path.join(folder_path, image_paths[idx])))
         ax.set_xticks([])
         ax.set_yticks([])
 
 class HoDataset(Dataset):
-    def __init__(self, csv_file, root_dir, batch_size=32, is_train:bool=False, val_ratio=0.2, random_state:int = 42):
+    def __init__(self, csv_file: str, root_dir, batch_size=32, is_train:bool=False, val_ratio=0.2, random_state:int = 42):
         '''
         Args:
             csv_file (string): csv 파일 경로
@@ -105,24 +105,24 @@ class HoDataset(Dataset):
         self.mode = 'train' if is_train else 'val'
         self.data = pd.read_csv(csv_file)
         self.root_dir = root_dir
-        self.batch_size=batch_size
+        self.batch_size = batch_size
         ## test: root_dir = ./data/test
-        self.train, self.val=random_split(self.data, lengths=[1-val_ratio, val_ratio], generator=torch.Generator().manual_seed(random_state))
+        self.train, self.val = random_split(self.data, lengths=[1-val_ratio, val_ratio], generator=torch.Generator().manual_seed(random_state))
         self.train = self.train.dataset.iloc[self.train.indices, :]
         self.val = self.val.dataset.iloc[self.val.indices, :]
 
     def __len__(self):
         return len(self.train) if self.mode == 'train' else len(self.val)
 
-    def __getitem__(self,idx):
+    def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
         if self.mode == 'train':
-            img_name = os.path.join(self.root_dir, self.train.iloc[idx,1])
+            img_name = os.path.join(self.root_dir, self.train.iloc[idx, 1])
             label = self.train.iloc[idx, 2]
         else:
-            img_name = os.path.join(self.root_dir, self.val.iloc[idx,1])
+            img_name = os.path.join(self.root_dir, self.val.iloc[idx, 1])
             label = self.val.iloc[idx, 2]
         image = Image.open(img_name)
 
@@ -139,16 +139,17 @@ class HoDataset(Dataset):
 
         return img_tensor, label
 
-def HoDataLoad(csv_path:str='./data', 
-               root_dir:str='./data/train', 
-               is_train:bool=False, 
-               batch_size:int=32, 
-               shuffle:bool=False,
-               val_ratio:float=0.2, 
-               random_state:int=42,
-               ) -> DataLoader:
+def HoDataLoad(
+        csv_path: str='./data', 
+        root_dir: str='./data/train', 
+        is_train: bool=False, 
+        batch_size: int=32, 
+        shuffle: bool=False,
+        val_ratio: float=0.2, 
+        random_state: int=42,
+    ) -> DataLoader:
     csv_file = os.path.join(csv_path, 'train.csv')
-    dataset = HoDataset(csv_file=csv_file, root_dir=root_dir, batch_size=batch_size, is_train=is_train,val_ratio=val_ratio, random_state=random_state)
+    dataset = HoDataset(csv_file=csv_file, root_dir=root_dir, batch_size=batch_size, is_train=is_train, val_ratio=val_ratio, random_state=random_state)
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
