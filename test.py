@@ -7,7 +7,7 @@ from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.data import CustomDataset
 from util.augmentation import TransformSelector
-from model.modelSelection import ModelSelector
+from model.model_selection import ModelSelector
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -73,9 +73,7 @@ if __name__=='__main__':
     
     model.load_state_dict(
         torch.load(
-
             os.path.join(save_result_path, "final_checkpoint.pth"),
-
             map_location='cpu'
     )['model_state_dict'])
     

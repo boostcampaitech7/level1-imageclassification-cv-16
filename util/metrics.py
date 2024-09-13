@@ -4,7 +4,8 @@ import numpy as np
 
 def calculate_metrics(
         y_true: np.ndarray, 
-        y_pred: np.ndarray) -> dict:
+        y_pred: np.ndarray
+    ) -> dict:
     
     accuracy = accuracy_score(y_true, y_pred)
 

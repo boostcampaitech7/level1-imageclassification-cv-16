@@ -5,7 +5,7 @@ import pandas as pd
 root_path = './data/train'
 csv_file = "./data/train.csv"
 
-def offlineImageFlip(root_path, csv_file):
+def offline_image_flip(root_path, csv_file):
     for root, dirs, files in os.walk(root_path):
         for file in files:
             if file.lower().endswith(('.png', '.jpg', '.jpeg')):
@@ -28,7 +28,7 @@ def offlineImageFlip(root_path, csv_file):
     print(f"created : train1.csv")
     
 
-def resetOfflineImageFlip(root_path):
+def reset_offline_image_flip(root_path):
     for root, dirs, files in os.walk(root_path):
         for file in files:
             if file.lower().endswith(('.png', '.jpg', '.jpeg')) and "flip_" in file:
@@ -42,5 +42,5 @@ def resetOfflineImageFlip(root_path):
         pass
     
 
-offlineImageFlip(root_path, csv_file)
+offline_image_flip(root_path, csv_file)
 # resetOfflineImageFlip(root_path)

@@ -117,7 +117,7 @@ class TransformSelector: #사용자가 지정한 transform_type에 따라 서로
         self.transform_type = transform_type.lower()
         # 인자 확인해서 변환 라이브러리를 선택함
 
-    def get_transform(self, augment: bool = False, alpha: float = 1.0) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
+    def get_transform(self, augment: bool=False, alpha: float = 1.0) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
         """
         augment: 데이터 증강 여부
         alpha: MixUp이나 CutMix의 파라미터

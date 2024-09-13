@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from model import modelSelection
+from model import model_selection
 
 from util.data import CustomDataset, HoDataLoad   # hobbang: Dataset, DataLoader 코드 하나로 합체
 from util.augmentation import TransformSelector
@@ -21,7 +21,7 @@ from util.optimizers import get_optimizer
 from util.losses import CustomLoss
 from trainer import Trainer
 
-from model.modelSelection import ModelSelector
+from model.model_selection import ModelSelector
 
 def run_train():
     # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정.
@@ -57,15 +57,15 @@ def run_train():
     val_transform = transform_selector.get_transform(augment=False)
     
     train_dataset = CustomDataset(
-        root_dir = train_data_dir,
-        data_df = train_df,
-        transform = train_transform
+        root_dir=train_data_dir,
+        data_df=train_df,
+        transform=train_transform
     )
     
     val_dataset = CustomDataset(
-        root_dir = train_data_dir,
-        data_df = val_df,
-        transform = val_transform
+        root_dir=train_data_dir,
+        data_df=val_df,
+        transform=val_transform
     )
     
     train_dataloader = DataLoader(
@@ -80,8 +80,12 @@ def run_train():
         shuffle=False
     )
 
-    model_selector = ModelSelector("timm", num_classes, 
-                                    model_name='resnet18', pretrained=True)    
+    model_selector = ModelSelector(
+        "timm", 
+        num_classes, 
+        model_name='resnet18', 
+        pretrained=True
+    )    
     model = model_selector.get_model()
     optimizer = get_optimizer(model, 'adam', lr)
     loss = CustomLoss()

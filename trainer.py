@@ -42,7 +42,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
 
-    def _save_checkpoint(self, epoch, val_loss):
+    def save_checkpoint_tmp(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
             self.best_val_loss = val_loss
             checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
@@ -137,8 +137,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
             # 체크포인트 trainloss에 대해 찍어야하?
-            # self._save_checkpoint(epoch, val_loss)
-            self._save_checkpoint(epoch, train_loss)
+            # self.save_checkpoint_tmp(epoch, val_loss)
+            self.save_checkpoint_tmp(epoch, train_loss)
             
             self.scheduler.step()
         # 최종 체크포인트

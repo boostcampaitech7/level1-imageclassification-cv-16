@@ -1,9 +1,9 @@
 import timm
 import torch
 import torch.nn as nn
-from model.CNN import SimpleCNN
+from model.cnn import SimpleCNN
 from model.mlp import MLP
-from model.torchvisionModel import TorchvisionModel
+from model.torchvision_model import TorchvisionModel
 from model.timm import TimmModel
 from model.resnet18 import ResNetModel
 
