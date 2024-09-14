@@ -3,9 +3,13 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import wandb
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.checkpoints import save_checkpoint
+from typing import Tuple, Any, Callable, List, Optional, Union
+
+
 
 class Trainer: # 변수 넣으면 바로 학습되도록
     def __init__( # 여긴 config로 나중에 빼야하는지 이걸 유지하는지
@@ -22,6 +26,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         train_total: int,
         val_total: int,
         r_epoch: int = 0
+
+        #wandb 관련 부분
+        #log_val_metrics_every_epoch: bool = False  # 검증 메트릭을 매 epoch마다 계산할지 여부
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -41,6 +48,11 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
+
+        # wandb 익명 모드로 초기화
+        wandb.init(project="project1", anonymous="allow")
+        wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
+
 
     def save_checkpoint_tmp(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
@@ -67,6 +79,10 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         total_loss = 0.0
         train_correct = 0
         progress_bar = tqdm(train_loader, desc="Training", leave=False)
+
+        # Train step에서 추가 메트릭 계산 (accuracy, F1 score, confusion matrix)
+        #all_preds = []  # 모든 예측을 저장할 리스트
+        #all_labels = []  # 모든 실제 라벨을 저장할 리스트
         
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
@@ -85,9 +101,19 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             train_correct += acc
             progress_bar.set_postfix(loss=loss.item())
         
+
+        avg_train_loss = total_loss / len(self.train_loader)
+        avg_train_acc = train_correct / len(self.train_loader.dataset)
+
+        # wandb에 학습 손실 및 정확도 로깅
+        wandb.log({'Train Loss': avg_train_loss, 'Train Accuracy': avg_train_acc})
+        
+        #return avg_train_loss, avg_train_acc
+    
         # 이거 멘토링 때 데이터셋으로 불러야 총 데이터 개수라지않았나??
         # train_loader.dataset 전체 데이터셋에 대한 정확도 계산
         return total_loss, train_correct
+
 
     def validate(self, val_loader) -> float:
         # 모델의 검증을 진행
@@ -108,8 +134,18 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 outputs = torch.argmax(outputs, dim = 1)
                 val_correct += (outputs == targets).sum().item()
                 progress_bar.set_postfix(loss=loss.item())
+
+        #wandb
+        avg_val_loss = total_loss / len(self.val_loader)
+        avg_val_acc = val_correct / len(self.val_loader.dataset)
+        # wandb에 검증 손실 및 정확도 로깅 (필요할 때만)
+        wandb.log({'Val Loss': avg_val_loss, 'Val Accuracy': avg_val_acc})
+        #return avg_val_loss, avg_val_acc        # 전체 데이터셋에 대한 정확도     
+        
         
         return total_loss, val_correct
+
+
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
