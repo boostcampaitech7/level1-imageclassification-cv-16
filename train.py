@@ -36,8 +36,8 @@ def run_train():
     num_classes = 500
     r_epoch = 2
     
-    # config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    # wandb.init(project='my-test-project', config=config)
+    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
+    wandb.init(project='my-test-project', config=config)
     
     transform_selector = TransformSelector(transform_type = "albumentations")
     
