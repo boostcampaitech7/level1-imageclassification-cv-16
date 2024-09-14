@@ -36,8 +36,8 @@ def run_train():
     num_classes = 500
     r_epoch = 2
     
-    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    wandb.init(project='my-test-project', config=config)
+    # config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
+    # wandb.init(project='my-test-project', config=config)
     
     transform_selector = TransformSelector(transform_type = "albumentations")
     
@@ -56,30 +56,24 @@ def run_train():
     train_transform = transform_selector.get_transform(augment=False)
     val_transform = transform_selector.get_transform(augment=False)
     
-    train_dataset = CustomDataset(
-        root_dir=train_data_dir,
-        data_df=train_df,
-        transform=train_transform
+    train_dataloader = HoDataLoad(
+        './data', 
+        './data/train', 
+        is_train=True, 
+        batch_size=batch_size, 
+        shuffle=True, 
+        val_ratio=0.2, 
+        random_state=seed
     )
-    
-    val_dataset = CustomDataset(
-        root_dir=train_data_dir,
-        data_df=val_df,
-        transform=val_transform
-    )
-    
-    train_dataloader = DataLoader(
-        train_dataset,
+    val_dataloader = HoDataLoad(
+        './data',
+        './data/train',
+        is_train=False,
         batch_size=batch_size,
-        shuffle=True
+        shuffle=False,
+        val_ratio=0.2,
+        random_state=seed
     )
-    
-    val_dataloader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False
-    )
-
     model_selector = ModelSelector(
         "timm", 
         num_classes, 
