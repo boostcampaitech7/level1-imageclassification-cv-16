@@ -23,27 +23,34 @@ class ModelSelector:
         # 모델 유형을 소문자로 변환
         model_type = model_type.lower()
         
+        # CNN
         if model_type == 'cnn':
             self.model = SimpleCNN(num_classes=num_classes)
         
+        # Torchvision (Timm)
         elif model_type == 'torchvision':
             self.model = TorchvisionModel(num_classes=num_classes, **kwargs)
         
+        # Timm
         elif model_type == 'timm':
             self.model = TimmModel(num_classes=num_classes, **kwargs)
 
             """
+        # MLP
         elif model_type == 'mlp':
             input_size = kwargs.get('input_size', 784)  # 예: 28x28 이미지의 경우
             hidden_size = kwargs.get('hidden_size', 128)
             self.model = MLP(input_size=input_size, hidden_size=hidden_size, num_classes=num_classes)"""
 
+        # ResNet18
         elif model_type == 'resnet':
             self.model = ResNetModel(num_classes=num_classes, **kwargs)    
 
+        # EfficientNet
         elif model_type == 'efficientnet':
             self.model = EfficientNetB0(num_classes=num_classes)
 
+        # ViT
         elif model_type == 'vit':
             # ViT의 기본 설정값들. 필요에 따라 kwargs에서 오버라이드 가능
             img_size = kwargs.get('img_size', 224)
@@ -63,13 +70,13 @@ class ModelSelector:
                 n_heads=n_heads
             )
 
-        
+        # MobileNet
         elif model_type == 'mobilenet':
             # MobileNet의 기본 설정값. 필요에 따라 kwargs에서 오버라이드 가능
             width_multiplier = kwargs.get('width_multiplier', 1.0)
             self.model = MobileNetV1(num_classes=num_classes, width_multiplier=width_multiplier)
                 
-        
+        # 등록되지 않은 모델
         else:
             raise ValueError("Unknown model type specified.")
 
