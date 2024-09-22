@@ -127,7 +127,16 @@ def parse_args_and_config():
     parser.add_argument('--train_csv', type=str, default='./data/train.csv', help='Path to train csv', action='store')
     parser.add_argument('--val_csv', type=str, default='./data/val.csv', help='Path to val csv', action='store')
     parser.add_argument('--auto_split', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
-    parser.add_argument('--')
+    parser.add_argument('--stratify', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
+    parser.add_argument('--model', type=str, default='', help='Select a model to train, default is cnn', action='store')
+    parser.add_argument('--lr', type=float, default=0.01, help='Select Learning Rate, default is 0.01', action='store')
+    parser.add_argument('--lr_scheduler', type=str, default="stepLR", help='Select LR scheduler, default is stepLR', action='store')
+    parser.add_argument('--lr_scheduler_gamma', type=float, default=0.1, help='Select LR scheduler gamma, default is 0.1', action='store')
+    parser.add_argument('--lr_scheduler_epochs_per_decay', type=int, default=2, help='Select LR scheduler epochs_per_decay, default is 2', action='store')
+    parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
+    parser.add_argument('--optim', type=str, default='adam', help='Select a optimizer, default is adam', action='store')
+    parser.add_argument('--epochs', type=int, default='100', help='Select total epochs to train, default is 100 epochs', action='store')
+    parser.add_argument('--seed', type=int, default=2024, help="Select seed, default is 2024", action='store')
     
 
 if __name__=='__main__':
