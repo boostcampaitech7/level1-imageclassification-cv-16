@@ -8,7 +8,7 @@ def get_optimizer(model, optimizer_name, lr=1e-3, **kwargs):
     elif optimizer_name == 'rmsprop':
         return optim.RMSprop(model.parameters(), lr=lr, alpha=kwargs.get('alpha', 0.99))
     elif optimizer_name == 'nadam':
-        return optim.Nadam(model.parameters(), lr=lr, **kwargs)
+        return optim.NAdam(model.parameters(), lr=lr, **kwargs)
     elif optimizer_name == 'radam':
         return optim.RAdam(model.parameters(), lr=lr, **kwargs)
     elif optimizer_name == 'adagrad':
