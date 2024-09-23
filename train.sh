@@ -7,8 +7,8 @@ python train.py \
     --data_root ./data \
     --train_csv ./data/train1.csv \
     --val_csv ./data/val.csv \
-    --height 384 \
-    --width 384 \
+    --height 224 \
+    --width 224 \
     --num_classes 500 \
     --auto_split True \
     --split_seed 42 \
@@ -18,15 +18,16 @@ python train.py \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
-    --batch 8 \
+    --batch 64 \
     --loss CE \
     --optim adam \
-    --epochs 50 \
+    --epochs 200 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
     --augmentations hflip_vflip_rotate\
-    --early_stopping 10 \
+    --adjust_ratio \
+    --early_stopping 30 \
 #    --resume True \
 #    --weights_path ./checkpoints/checkpoint_epoch_16.pth
 

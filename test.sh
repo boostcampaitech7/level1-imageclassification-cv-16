@@ -11,4 +11,5 @@ python test.py \
     --model timm-resnet50 \
     --batch 64 \
     --transform_type albumentations \
-    --augmentations hflip_vflip_rotate 
+    --augmentations hflip_vflip_rotate \
+    --adjust_ratio

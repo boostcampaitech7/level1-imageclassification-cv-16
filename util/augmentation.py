@@ -5,6 +5,7 @@ import torchvision.transforms as T
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from typing import Union, Tuple
+import numpy as np
 
 
 #기본 트랜스폼 클래스
@@ -37,11 +38,12 @@ class BasicTransforms:
 
 # Albumentation 기반 트랜스폼
 class AlbumentationsTransforms:
-    def __init__(self, augment=False, height: int=224, width: int=224, augment_list: str="") -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
+    def __init__(self, augment=False, height: int=224, width: int=224, augment_list: str="", adjust_ratio=False) -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
         self.augment = augment
         self.height = height
         self.width = width
         self.augment_list = augment_list
+        self.adjust_ratio = adjust_ratio
 
         common_transform = [
             A.Resize(self.height, self.width),
@@ -63,7 +65,9 @@ class AlbumentationsTransforms:
         # Albumentations 증강을 사용한 트랜스폼 (랜덤 자르기, 플립, 회전...)
         self.augment_transform = A.Compose(aug_list + common_transform)
 
-    def __call__(self, image) -> torch.Tensor: #이미지에 트랜스폼 적용
+    def __call__(self, image:np.ndarray) -> torch.Tensor: #이미지에 트랜스폼 적용
+        if self.adjust_ratio:
+            image = self.adjust_img_ratio(image)
         if self.augment:
             augmented = self.augment_transform(image=image)
             return augmented['image']
@@ -71,6 +75,16 @@ class AlbumentationsTransforms:
             base = self.base_transform(image=image)
             return base['image']
 
+    def adjust_img_ratio(self, image:np.ndarray) -> np.ndarray:
+        height, width = image.shape[:2]
+        if 0.5 < height / width < 1.5:
+            return image
+        max_side = max(width, height)
+        white_background = np.ones((max_side, max_side, 3), dtype=np.uint8) * 255
+        x_offset = (max_side - width) // 2
+        y_offset = (max_side - height) // 2
+        white_background[y_offset:y_offset + height, x_offset:x_offset + width] = image
+        return white_background
 
 #컷믹스 트랜스폼
 class CutMixTransforms:
@@ -131,7 +145,8 @@ class TransformSelector: #사용자가 지정한 transform_type에 따라 서로
             alpha: float=1.0,
             height: int=224,
             width: int=224,
-            augment_list: str=""
+            augment_list: str="",
+            adjust_ratio: bool=False
         ) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
         """
         augment: 데이터 증강 여부
@@ -141,7 +156,7 @@ class TransformSelector: #사용자가 지정한 transform_type에 따라 서로
             return BasicTransforms(augment=augment, height=height, width=width)
 
         elif self.transform_type == 'albumentations':
-            return AlbumentationsTransforms(augment=augment, height=height, width=width, augment_list=augment_list)
+            return AlbumentationsTransforms(augment=augment, height=height, width=width, augment_list=augment_list, adjust_ratio=adjust_ratio)
         
         elif self.transform_type == 'cutmix':
             return CutMixTransforms(alpha=alpha)
