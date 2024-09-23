@@ -12,7 +12,7 @@ python train.py \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-resnet50 \
+    --model timm-efficientnet_b0 \
     --lr 0.001 \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
