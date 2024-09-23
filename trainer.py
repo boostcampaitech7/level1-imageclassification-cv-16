@@ -65,7 +65,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
     def final_save_model(self, epoch, loss) -> None:
         # 체크포인트 저장
         final_checkpoint_filepath = os.path.join(self.checkpoint_dir, 'final_checkpoint.pth')
-        save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
+        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, loss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader) -> float:
