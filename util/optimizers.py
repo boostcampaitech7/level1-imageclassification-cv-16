@@ -7,6 +7,16 @@ def get_optimizer(model, optimizer_name, lr=1e-3, **kwargs):
         return optim.SGD(model.parameters(), lr=lr, momentum=kwargs.get('momentum', 0.9))
     elif optimizer_name == 'rmsprop':
         return optim.RMSprop(model.parameters(), lr=lr, alpha=kwargs.get('alpha', 0.99))
+    elif optimizer_name == 'nadam':
+        return optim.Nadam(model.parameters(), lr=lr, **kwargs)
+    elif optimizer_name == 'radam':
+        return optim.RAdam(model.parameters(), lr=lr, **kwargs)
+    elif optimizer_name == 'adagrad':
+        return optim.Adagrad(model.parameters(), lr=lr, **kwargs)
+    elif optimizer_name == 'adadelta':
+        return optim.Adadelta(model.parameters(), lr=lr, **kwargs)
+    elif optimizer_name == 'adamw':
+        return optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01) # 가중치감소를 직접 적용 -> L2 정규화 강화
     else:
         raise ValueError(f"Unsupported optimizer: {optimizer_name}")
     
