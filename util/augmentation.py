@@ -54,9 +54,9 @@ class AlbumentationsTransforms:
         # Albumentations 증강을 사용한 트랜스폼 (랜덤 자르기, 플립, 회전...)
         self.augment_transform = A.Compose([
             # A.HorizontalFlip(p=0.5), #수평 플립
-            # A.VerticalFlip(p=0.5), #수직 플립
-            A.RandomCrop(height=self.height, width=self.width, p=0.5),
-            A.Rotate(limit=(-30, 30), border_mode=cv2.BORDER_REFLECT, p=0.5), #45도 제한 랜덤 회전
+            A.VerticalFlip(p=0.5), #수직 플립
+            # A.RandomCrop(height=self.height, width=self.width, p=0.5),
+            A.Rotate(limit=(-90, 90), border_mode=cv2.BORDER_CONSTANT, fill_value=(255, 255, 255)), #45도 제한 랜덤 회전
             # A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
         ] + common_transform)
 
