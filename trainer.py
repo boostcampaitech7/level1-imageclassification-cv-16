@@ -39,6 +39,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.val_total = val_total
         self.r_epoch = r_epoch
         
+        self.val_acc = 0.0
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
 
@@ -130,6 +131,10 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             
                 train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
                 val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
+            
+            ####################### 체크포인트: val_acc가 1% 이상 올랐을 때 저장하기 위해 acc 찾아내 저장하는 위치????
+            # if val_acc >= self.val_acc+0.01:
+            #     self.val_acc = val_acc
             
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 

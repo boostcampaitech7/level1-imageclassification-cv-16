@@ -1,12 +1,14 @@
 import torch
+import os
 
-def save_checkpoint(model, optimizer, epoch, loss, filepath):
+def save_checkpoint(model, optimizer, epoch, loss, filepath, val_loss=0):
     checkpoint = {
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'loss': loss
     }
+    os.makedirs('./checkpoints', exist_ok=True)
     torch.save(checkpoint, filepath) ## 제대로 저장되고 불러와지는지 확인해볼 것 => 냅둬도 괜찮을 듯
     print(f"Checkpoint saved at {filepath}")
 
