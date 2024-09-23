@@ -2,6 +2,7 @@
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import wandb
 from tqdm.auto import tqdm
@@ -72,6 +73,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
+
     def train_epoch(self, train_loader) -> float:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
@@ -120,6 +122,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.model.eval()
         val_correct = 0
         total_loss = 0.0
+        threshold=0.6
+        confusing_images = []  # 헷갈리는 이미지를 저장할 리스트
+        low_confidence_data = []  # 헷갈리는 데이터 저장
         progress_bar = tqdm(val_loader, desc="Validating", leave=False)
         
         global log_images
@@ -128,23 +133,62 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
                 
+                # 모델 예측 출력 (로짓)
                 outputs = self.model(images)    
                 
+                # 손실 계산
                 loss = self.loss_fn(outputs, targets)
-                
                 total_loss += loss.item() * targets.shape[0]
+
+                # 예측 값 계산
                 outputs = torch.argmax(outputs, dim = 1)
                 val_correct += (outputs == targets).sum().item()
+
+
+
+                # Softmax로 확률 계산
+                probs = F.softmax(self.model(images), dim=1)
+                max_probs, predicted_classes = torch.max(probs, dim=1)
+                
+                # 확률이 낮은 예측 (헷갈리는 데이터) 로깅
+                for i in range(len(images)):
+                    if max_probs[i].item() < threshold:  # 임계값 이하일 때 헷갈리는 데이터로 간주
+                        caption = f"Pred: {predicted_classes[i].item()} (Prob: {max_probs[i].item():.2f}), Truth: {targets[i].item()}"
+                        
+                        # wandb 이미지 로깅을 위한 데이터 추가
+                        confusing_images.append(wandb.Image(images[i], caption=caption))
+
+                        # log_images에 헷갈리는 이미지 추가
+                        log_images.append(wandb.Image(images[i], caption="Pred: {} Truth: {}".format(predicted_classes[i].item(), targets[i].item())))
+                        
+                        # 헷갈리는 데이터 저장 (이미지, 예측 값, 실제 값, 확률)
+                        low_confidence_data.append({
+                            'image': images[i].cpu(),
+                            'predicted_class': predicted_classes[i].item(),
+                            'true_class': targets[i].item(),
+                            'probability': max_probs[i].item()
+                        })
+                
+                # 진행 상황 표시
+                #progress_bar.set_postfix(loss=loss.item(), accuracy=val_correct / len(val_loader.dataset))
+
+
+
                 progress_bar.set_postfix(loss=loss.item())
 
                 #if (outputs == targets).sum().item() == 0: #틀린 거면
-                #log_images.append(wandb.Image(images[0], caption="Pred: {} Truth: {}".format(outputs[0].item(), targets[0])))    
-            # 예측과 실제 값이 다른 경우만 이미지 로그
+                    #log_images.append(wandb.Image(images[0], caption="Pred: {} Truth: {}".format(outputs[0].item(), targets[0])))    
+                # 예측과 실제 값이 다른 경우만 이미지 로그
+                """
                 for i in range(len(images)):
                     if outputs[i].item() != targets[i].item():
                         caption = "Pred: {} Truth: {}".format(outputs[i].item(), targets[i].item())
                         log_images.append(wandb.Image(images[i], caption=caption))
-
+                
+                """
+                        # wandb에 헷갈리는 이미지 로깅
+        if confusing_images:
+            wandb.log({"Confusing Test Images": confusing_images})
 
 
         #wandb.log({"Test Images": log_images})
@@ -183,7 +227,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
-            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+            #wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss}, step=epoch)
 
         
             # 체크포인트 trainloss에 대해 찍어야하?
