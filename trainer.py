@@ -140,41 +140,37 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item() * targets.shape[0]
 
-                # 예측 값 계산
-                outputs = torch.argmax(outputs, dim = 1)
-                val_correct += (outputs == targets).sum().item()
-
-
-
                 # Softmax로 확률 계산
                 probs = F.softmax(self.model(images), dim=1)
                 max_probs, predicted_classes = torch.max(probs, dim=1)
-                
-                # 확률이 낮은 예측 (헷갈리는 데이터) 로깅
-                for i in range(len(images)):
-                    if max_probs[i].item() < threshold:  # 임계값 이하일 때 헷갈리는 데이터로 간주
-                        caption = f"Pred: {predicted_classes[i].item()} (Prob: {max_probs[i].item():.2f}), Truth: {targets[i].item()}"
-                        
-                        # wandb 이미지 로깅을 위한 데이터 추가
-                        confusing_images.append(wandb.Image(images[i], caption=caption))
 
-                        # log_images에 헷갈리는 이미지 추가
-                        log_images.append(wandb.Image(images[i], caption="Pred: {} Truth: {}".format(predicted_classes[i].item(), targets[i].item())))
-                        
-                        # 헷갈리는 데이터 저장 (이미지, 예측 값, 실제 값, 확률)
-                        low_confidence_data.append({
-                            'image': images[i].cpu(),
-                            'predicted_class': predicted_classes[i].item(),
-                            'true_class': targets[i].item(),
-                            'probability': max_probs[i].item()
-                        })
+                # 정확도 계산
+                val_correct += (predicted_classes == targets).sum().item()
+                
+                # 자신에 대한 헷갈리는 데이터 체크
+                # 각 클래스에 대해 자신과의 예측 확률을 비교하여 불확실한 예측을 찾기
+                for i in range(len(images)):
+                    if predicted_classes[i] == targets[i]:  # 예측이 맞는 경우
+                        if max_probs[i].item() < threshold:  # 확률이 낮은 경우
+                            caption = f"Pred: {predicted_classes[i].item()} (Prob: {max_probs[i].item():.2f}), Truth: {targets[i].item()}"
+                            
+                            # wandb 이미지 로깅을 위한 데이터 추가
+                            confusing_images.append(wandb.Image(images[i], caption=caption))
+
+                            # log_images에 헷갈리는 이미지 추가
+                            log_images.append(wandb.Image(images[i], caption="Pred: {} Truth: {}".format(predicted_classes[i].item(), targets[i].item())))
+                            
+                            # 헷갈리는 데이터 저장 (이미지, 예측 값, 실제 값, 확률)
+                            low_confidence_data.append({
+                                'image': images[i].cpu(),
+                                'predicted_class': predicted_classes[i].item(),
+                                'true_class': targets[i].item(),
+                                'probability': max_probs[i].item()
+                            })
                 
                 # 진행 상황 표시
-                #progress_bar.set_postfix(loss=loss.item(), accuracy=val_correct / len(val_loader.dataset))
-
-
-
-                progress_bar.set_postfix(loss=loss.item())
+                progress_bar.set_postfix(loss=loss.item(), accuracy=val_correct / len(val_loader.dataset))
+                #progress_bar.set_postfix(loss=loss.item())
 
                 #if (outputs == targets).sum().item() == 0: #틀린 거면
                     #log_images.append(wandb.Image(images[0], caption="Pred: {} Truth: {}".format(outputs[0].item(), targets[0])))    
@@ -227,8 +223,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
-            #wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
-            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss}, step=epoch)
+            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+            #andb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss}, step=epoch)
 
         
             # 체크포인트 trainloss에 대해 찍어야하?
