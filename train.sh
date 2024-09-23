@@ -6,10 +6,12 @@ python train.py \
     --data_root ./data \
     --train_csv ./data/train.csv \
     --val_csv ./data/val.csv \
+    --height 224 \
+    --width 224 \
     --num_classes 500 \
     --auto_split True \
     --split_seed 42 \
-    --stratify True \
+    --stratify target \
     --model timm-resnet18 \
     --lr 0.001 \
     --lr_scheduler stepLR \
@@ -22,6 +24,7 @@ python train.py \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
+    --early_stopping 10
 #    --resume True \
 #    --weights_path ./checkpoints/checkpoint_epoch_16.pth
 

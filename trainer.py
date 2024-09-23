@@ -43,6 +43,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.r_epoch = r_epoch
         
         self.best_val_loss = float('inf')
+        self.best_val_acc = 0.0
         self.checkpoint_dir = "./checkpoints"
         os.makedirs(self.checkpoint_dir, exist_ok=True)
         
@@ -52,9 +53,10 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.early_stopping = early_stopping
 
-    def save_checkpoint_tmp(self, epoch, val_loss):
-        if val_loss < self.best_val_loss:
+    def save_checkpoint_tmp(self, epoch, val_loss, val_acc) -> None:
+        if val_acc >= self.best_val_acc+0.01:
             self.best_val_loss = val_loss
+            self.best_acc_loss = val_acc
             checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
             save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, val_loss, checkpoint_filepath)
             print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
@@ -147,7 +149,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
             # self.save_checkpoint_tmp(epoch, val_loss)
-            self.save_checkpoint_tmp(epoch, train_loss)
+            self.save_checkpoint_tmp(epoch, val_loss, val_acc)
             
             self.scheduler.step()
             

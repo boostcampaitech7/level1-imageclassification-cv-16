@@ -38,6 +38,9 @@ def run_train(args:Namespace) -> None:
     
     ## 데이터 증강
     transform_type = args.transform_type
+    stratify_column = args.stratify
+    height = args.height
+    width = args.width
     
     ## 모델, 옵티마이저, 손실 함수(로스 함수)
     model_type = args.model
@@ -69,12 +72,12 @@ def run_train(args:Namespace) -> None:
     train_df, val_df = train_test_split(
         train_info, 
         test_size=0.2,
-        stratify=train_info['target'],
+        stratify=train_info[stratify_column],
         random_state=42
     )
     
-    train_transform = transform_selector.get_transform(augment=True)
-    val_transform = transform_selector.get_transform(augment=False)
+    train_transform = transform_selector.get_transform(augment=True, height=height, width=width)
+    val_transform = transform_selector.get_transform(augment=False, height=height, width=width)
     
     train_dataset = CustomDataset(train_data_dir, train_df, transform=train_transform)
     val_dataset = CustomDataset(train_data_dir, val_df, transform=val_transform)
@@ -146,7 +149,7 @@ def run_train(args:Namespace) -> None:
         train_total=train_df.shape[0],
         val_total=val_df.shape[0],
         r_epoch=r_epoch,
-        early_stoppin=early_stopping
+        early_stopping=early_stopping
     )
     
     trainer.train()
@@ -164,10 +167,12 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--val_csv', type=str, default='./data/val.csv', help='Path to val csv', action='store')
     parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
     
+    parser.add_argument('--height', type=int, default=224, help="Select input img height, default is 224", action='store')
+    parser.add_argument('--width', type=int, default=224, help="Select input img width, default is 224", action='store')
     parser.add_argument('--num_classes', type=int, default=500, help="Select number of classes, default is 500", action='store')
     parser.add_argument('--auto_split', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
     parser.add_argument('--split_seed', type=int, default=42, help='Set split_seed, default is 42', action='store')
-    parser.add_argument('--stratify', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
+    parser.add_argument('--stratify', type=str, default='target', help='Set balance split', action='store')
     
     parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
     parser.add_argument('--lr', type=float, default=0.01, help='Select Learning Rate, default is 0.01', action='store')
