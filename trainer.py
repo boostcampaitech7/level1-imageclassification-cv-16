@@ -23,7 +23,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         result_path: str,
         train_total: int,
         val_total: int,
-        r_epoch: int = 0
+        r_epoch: int,
+        early_stopping: int,
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -48,6 +49,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.start_epoch = 0
         self.resume = resume # 학습 재개를 위한 것인지
         self.weights_path = weights_path # 학습 재개를 위해 불러와야할 가중치 주소
+        
+        self.early_stopping = early_stopping
 
     def save_checkpoint_tmp(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
@@ -119,6 +122,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             self.load_settings()
 
         # 전체 훈련 과정을 관리
+        count = 0
         for epoch in range(self.start_epoch, self.epochs):
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
@@ -142,11 +146,18 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb code 추가
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
-            # 체크포인트 trainloss에 대해 찍어야하?
             # self.save_checkpoint_tmp(epoch, val_loss)
             self.save_checkpoint_tmp(epoch, train_loss)
             
             self.scheduler.step()
+            
+            if val_acc > self.best_val_acc:
+                count = 0
+            else:
+                count += 1
+                if count == self.early_stopping:
+                    print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
+                    break
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
         self.final_save_model(epoch, train_loss)
