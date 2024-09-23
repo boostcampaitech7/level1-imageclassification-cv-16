@@ -10,7 +10,9 @@ from util.checkpoints import save_checkpoint
 class Trainer: # 변수 넣으면 바로 학습되도록
     def __init__( # 여긴 config로 나중에 빼야하는지 이걸 유지하는지
         self, 
-        model: nn.Module, 
+        model: nn.Module,
+        resume: bool,
+        weights_path: str,
         device: torch.device, 
         train_loader: DataLoader, 
         val_loader: DataLoader, 
@@ -21,7 +23,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         result_path: str,
         train_total: int,
         val_total: int,
-        r_epoch: int = 0
+        r_epoch: int,
+        early_stopping: int,
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -42,12 +45,18 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
         os.makedirs(self.checkpoint_dir, exist_ok=True)
+        
+        self.start_epoch = 0
+        self.resume = resume # 학습 재개를 위한 것인지
+        self.weights_path = weights_path # 학습 재개를 위해 불러와야할 가중치 주소
+        
+        self.early_stopping = early_stopping
 
     def save_checkpoint_tmp(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
             self.best_val_loss = val_loss
             checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
-            save_checkpoint(self.model, self.optimizer, epoch, val_loss, checkpoint_filepath)
+            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, val_loss, checkpoint_filepath)
             print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
@@ -109,9 +118,12 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         return total_loss, val_correct
 
     def train(self) -> None:
+        if self.resume:
+            self.load_settings()
+
         # 전체 훈련 과정을 관리
-        
-        for epoch in range(self.epochs):
+        count = 0
+        for epoch in range(self.start_epoch, self.epochs):
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
             print(f"Epoch {epoch+1}/{self.epochs}")
@@ -134,11 +146,34 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb code 추가
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
-            # 체크포인트 trainloss에 대해 찍어야하?
             # self.save_checkpoint_tmp(epoch, val_loss)
             self.save_checkpoint_tmp(epoch, train_loss)
             
             self.scheduler.step()
+            
+            if val_acc > self.best_val_acc:
+                count = 0
+            else:
+                count += 1
+                if count == self.early_stopping:
+                    print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
+                    break
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
         self.final_save_model(epoch, train_loss)
+        
+    def load_settings(self) -> None:
+        ## 학습 재개를 위한 모델, 옵티마이저, 스케줄러 가중치 및 설정을 불러옵니다.
+        print("loading prev training setttings")
+        try:
+            setting_info = torch.load(
+                self.weights_path,
+                map_location='cpu'
+            )
+            self.start_epoch = setting_info['epoch']
+            self.model.load_state_dict(setting_info['model_state_dict'])
+            self.optimizer.load_state_dict(setting_info['optimizer_state_dict'])
+            self.scheduler.load_state_dict(setting_info['scheduler_state_dict'])
+            print("loading successful")
+        except:
+            raise Exception('학습 재개를 위한 정보를 불러오는데 문제가 발생하였습니다')

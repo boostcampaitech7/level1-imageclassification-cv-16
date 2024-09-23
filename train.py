@@ -27,12 +27,13 @@ from model.model_selection import ModelSelector
 def run_train(args:Namespace) -> None:
     ## device와 seed 설정
     device = torch.device(args.device)
+    early_stopping = args.early_stopping
     
     ## 데이터 경로 및 CSV 파일 경로
     data_root = args.data_root
     train_data_dir = data_root + "/train/"
-    train_data_info_file = data_root + '/train.csv'
-    val_data_info_file = data_root + '/val.csv'
+    train_data_info_file = args.train_csv
+    val_data_info_file = args.val_csv
     save_result_path = "./train_result"
     
     ## 데이터 증강
@@ -50,8 +51,12 @@ def run_train(args:Namespace) -> None:
     num_classes = args.num_classes
     r_epoch = args.r_epochs
     
+    ## 학습 재개 정보
+    resume = args.resume
+    weights_path = args.weights_path
+    
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    wandb.init(project='my-test-project', config=config)
+    # wandb.init(project='my-test-project', config=config)
     
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
@@ -129,6 +134,8 @@ def run_train(args:Namespace) -> None:
     trainer = Trainer(
         model=model,
         device=device,
+        resume=resume,
+        weights_path=weights_path,
         train_loader=train_dataloader,
         val_loader=val_dataloader,
         optimizer=optimizer,
@@ -138,7 +145,8 @@ def run_train(args:Namespace) -> None:
         result_path=save_result_path,
         train_total=train_df.shape[0],
         val_total=val_df.shape[0],
-        r_epoch=r_epoch
+        r_epoch=r_epoch,
+        early_stoppin=early_stopping
     )
     
     trainer.train()
@@ -150,14 +158,17 @@ def parse_args_and_config() -> Namespace:
     
     parser.add_argument('--mode', type=str, default='train', help='Select mode train or test default is train', action='store')
     parser.add_argument('--device', type=str, default='cpu', help='Select device to run, default is cpu', action='store')
+    
     parser.add_argument('--data_root', type=str, default='./data', help='Path to data root', action='store')
     parser.add_argument('--train_csv', type=str, default='./data/train.csv', help='Path to train csv', action='store')
     parser.add_argument('--val_csv', type=str, default='./data/val.csv', help='Path to val csv', action='store')
     parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
+    
     parser.add_argument('--num_classes', type=int, default=500, help="Select number of classes, default is 500", action='store')
     parser.add_argument('--auto_split', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
     parser.add_argument('--split_seed', type=int, default=42, help='Set split_seed, default is 42', action='store')
     parser.add_argument('--stratify', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
+    
     parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
     parser.add_argument('--lr', type=float, default=0.01, help='Select Learning Rate, default is 0.01', action='store')
     parser.add_argument('--lr_scheduler', type=str, default="stepLR", help='Select LR scheduler, default is stepLR', action='store')
@@ -170,6 +181,10 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--r_epochs', type=int, default='2', help='Select total data swap epochs, default is last 2 epochs', action='store')
     parser.add_argument('--seed', type=int, default=2024, help='Select seed, default is 2024', action='store')
     parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
+    
+    parser.add_argument('--resume', type=bool, default=False, help='resuming training, default is False meaning new training (requires weights_path for checkpoints)', action='store')
+    parser.add_argument('--weights_path', type=str, default=None, help='Path to resuming weight_path, default is None', action='store')
+    parser.add_argument('--early_stopping', type=int, default=10, help='Select number of epochs to wait for early stoppoing', action='store')
     
     return parser.parse_args()
 
