@@ -13,15 +13,15 @@ python train.py \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-efficientnet_b0 \
+    --model timm-resnet50 \
     --lr 0.001 \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
     --batch 64 \
     --loss CE \
-    --optim nadam \
-    --epochs 10 \
+    --optim adagrad \
+    --epochs 20 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
