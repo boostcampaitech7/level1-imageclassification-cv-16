@@ -122,15 +122,12 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.model.eval()
         val_correct = 0
         total_loss = 0.0
-        threshold=0.6
-        confusing_images = []  # 헷갈리는 이미지를 저장할 리스트
-        low_confidence_data = []  # 헷갈리는 데이터 저장
         progress_bar = tqdm(val_loader, desc="Validating", leave=False)
         
         global log_images
         log_images= []
         with torch.no_grad():
-            for images, targets in progress_bar:
+            for batch_idx, (images, targets) in enumerate(progress_bar):
                 images, targets = images.to(self.device), targets.to(self.device)
                 
                 # 모델 예측 출력 (로짓)
@@ -140,52 +137,23 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item() * targets.shape[0]
 
-                # Softmax로 확률 계산
-                probs = F.softmax(self.model(images), dim=1)
-                max_probs, predicted_classes = torch.max(probs, dim=1)
-
-                # 정확도 계산
-                val_correct += (predicted_classes == targets).sum().item()
-                
-                # 자신에 대한 헷갈리는 데이터 체크
-                # 각 클래스에 대해 자신과의 예측 확률을 비교하여 불확실한 예측을 찾기
-                for i in range(len(images)):
-                    if predicted_classes[i] == targets[i]:  # 예측이 맞는 경우
-                        if max_probs[i].item() < threshold:  # 확률이 낮은 경우
-                            caption = f"Pred: {predicted_classes[i].item()} (Prob: {max_probs[i].item():.2f}), Truth: {targets[i].item()}"
-                            
-                            # wandb 이미지 로깅을 위한 데이터 추가
-                            confusing_images.append(wandb.Image(images[i], caption=caption))
-
-                            # log_images에 헷갈리는 이미지 추가
-                            log_images.append(wandb.Image(images[i], caption="Pred: {} Truth: {}".format(predicted_classes[i].item(), targets[i].item())))
-                            
-                            # 헷갈리는 데이터 저장 (이미지, 예측 값, 실제 값, 확률)
-                            low_confidence_data.append({
-                                'image': images[i].cpu(),
-                                'predicted_class': predicted_classes[i].item(),
-                                'true_class': targets[i].item(),
-                                'probability': max_probs[i].item()
-                            })
+                # 예측 값 계산
+                outputs = torch.argmax(outputs, dim = 1)
+                val_correct += (outputs == targets).sum().item()
                 
                 # 진행 상황 표시
-                progress_bar.set_postfix(loss=loss.item(), accuracy=val_correct / len(val_loader.dataset))
-                #progress_bar.set_postfix(loss=loss.item())
+                progress_bar.set_postfix(loss=loss.item())
 
                 #if (outputs == targets).sum().item() == 0: #틀린 거면
                     #log_images.append(wandb.Image(images[0], caption="Pred: {} Truth: {}".format(outputs[0].item(), targets[0])))    
+                
                 # 예측과 실제 값이 다른 경우만 이미지 로그
-                """
                 for i in range(len(images)):
                     if outputs[i].item() != targets[i].item():
-                        caption = "Pred: {} Truth: {}".format(outputs[i].item(), targets[i].item())
+                        caption = f"Batch: {batch_idx}, Index: {i}, Pred: {outputs[i].item()}, Truth: {targets[i].item()}"
                         log_images.append(wandb.Image(images[i], caption=caption))
                 
-                """
-                        # wandb에 헷갈리는 이미지 로깅
-        if confusing_images:
-            wandb.log({"Confusing Test Images": confusing_images})
-
+                
 
         #wandb.log({"Test Images": log_images})
         #wandb
