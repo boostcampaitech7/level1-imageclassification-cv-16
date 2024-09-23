@@ -81,15 +81,19 @@ if __name__=='__main__':
         drop_last=False
     )
 
-    if args.model == "timm-resnet18":
+    ## 학습 모델
+    if 'timm' in args.model:
         model_selector = ModelSelector(
-            model_type="timm",
-            num_classes=num_classes,
-            model_name="resnet18",
+            "timm", 
+            num_classes, 
+            model_name=args.model.split("-")[-1], 
             pretrained=True
         )
     else:
-        raise Exception('모델을 찾을 수 없습니다.')
+        model_selector = ModelSelector(
+            args.model,
+            num_classes,
+        )
 
     model = model_selector.get_model()
     
