@@ -1,1 +1,11 @@
-python test.py
+python test.py \
+    --mode test \
+    --device cuda \
+    --data_root ./data \
+    --test_csv ./data/test.csv \
+    --output_path output.csv \
+    --checkpoint_path ./checkpoints/final_checkpoint.pth \
+    --num_classes 500 \
+    --model timm-resnet18 \
+    --batch 64 \
+    --transform_type albumentations

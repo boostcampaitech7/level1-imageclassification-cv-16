@@ -121,3 +121,5 @@ __MACOSX/
 data.tar.gz
 
 nohup.out
+
+*.csv

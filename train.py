@@ -91,13 +91,15 @@ def run_train(args:Namespace) -> None:
             "cnn", 
             num_classes, 
         )
-    elif model_type == 'timm_resnet18':
+    elif model_type == 'timm-resnet18':
         model_selector = ModelSelector(
             "timm", 
             num_classes, 
             model_name='resnet18', 
             pretrained=True
         )
+    else:
+        raise Exception('모델을 찾을 수 없습니다.')
     
     model = model_selector.get_model()
     
