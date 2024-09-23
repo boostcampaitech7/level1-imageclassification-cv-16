@@ -71,6 +71,12 @@ def reset_augmentation(root_path: str, aug: str):
     except Exception as e:
         pass
 
+# 비율 맞춰주기
 # reset_augmentation(root_path, "white_")
 # add_white_image(root_path, "./data/train.csv")
-flip_image(root_path, "./data/train1.csv")
+
+# flip_image
+flip_image(root_path, "./data/train.csv")
+
+# flip_image 제거 
+# reset_augmentation(root_path, "flip_")

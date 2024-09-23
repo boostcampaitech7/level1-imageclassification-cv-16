@@ -125,3 +125,5 @@ data.tar.gz
 nohup.out
 
 *.csv
+
+config.txt

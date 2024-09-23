@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from datetime import datetime
+from argparse import Namespace
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.checkpoints import save_checkpoint
@@ -26,6 +27,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         val_total: int,
         r_epoch: int,
         early_stopping: int,
+        args: Namespace
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -57,9 +59,12 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.checkpoint_dir = "./checkpoints/" + self.time
         os.makedirs(self.checkpoint_dir, exist_ok=True)
         
-    def create_config_txt(self):
-        pass
+        self.create_config_txt(self.checkpoint_dir, args)
         
+    def create_config_txt(self, root_path, args):
+        with open(os.path.join(root_path, "config.txt"), "w") as f:
+            for arg, value in vars(args).items():
+                f.write(f"--{arg} {value} \\ \n")
 
     def save_checkpoint_tmp(self, epoch, val_loss, val_acc) -> None:
         if val_acc >= self.best_val_acc+0.01:
