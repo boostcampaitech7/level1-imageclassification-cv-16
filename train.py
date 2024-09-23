@@ -1,5 +1,6 @@
 import os
 import argparse
+from argparse import Namespace
 import random
 import wandb
 import torch
@@ -23,23 +24,37 @@ from trainer import Trainer
 
 from model.model_selection import ModelSelector
 
-def run_train():
-    # 학습 데이터의 경로와 정보를 가진 파일의 경로를 설정.
-    train_data_dir = "./data/train"
-    train_data_info_file = "./data/train.csv"
-    val_data_info_file = "./data/val.csv"
+def run_train(args:Namespace) -> None:
+    ## device와 seed 설정
+    device = torch.device(args.device)
+    
+    ## 데이터 경로 및 CSV 파일 경로
+    data_root = args.data_root
+    train_data_dir = data_root + "/train/"
+    train_data_info_file = data_root + '/train.csv'
+    val_data_info_file = data_root + '/val.csv'
     save_result_path = "./train_result"
     
-    epochs = 10
-    batch_size = 64
-    lr = 0.001
-    num_classes = 500
-    r_epoch = 2
+    ## 데이터 증강
+    transform_type = args.transform_type
+    
+    ## 모델, 옵티마이저, 손실 함수(로스 함수)
+    model_type = args.model
+    loss_type = args.loss
+    optimizer_type = args.optim
+    
+    ## 학습률, 클래스 개수, 에포크, 배치 크기, 돌려서 학습
+    epochs = args.epochs
+    batch_size = args.batch
+    lr = args.lr
+    num_classes = args.num_classes
+    r_epoch = args.r_epochs
     
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
     wandb.init(project='my-test-project', config=config)
     
-    transform_selector = TransformSelector(transform_type = "albumentations")
+    ## 데이터 증강 및 세팅
+    transform_selector = TransformSelector(transform_type=transform_type)
     
     # train_df = pd.read_csv(train_data_info_file)
     # val_df = pd.read_csv(val_data_info_file)
@@ -53,44 +68,51 @@ def run_train():
         random_state=42
     )
     
-    train_transform = transform_selector.get_transform(augment=False)
+    train_transform = transform_selector.get_transform(augment=True)
     val_transform = transform_selector.get_transform(augment=False)
     
-    train_dataloader = HoDataLoad(
-        './data', 
-        './data/train', 
-        is_train=True, 
-        batch_size=batch_size, 
-        shuffle=True, 
-        val_ratio=0.2, 
-        random_state=seed
-    )
-    val_dataloader = HoDataLoad(
-        './data',
-        './data/train',
-        is_train=False,
+    train_dataset = CustomDataset(train_data_dir, train_df, transform=train_transform)
+    val_dataset = CustomDataset(train_data_dir, val_df, transform=val_transform)
+    
+    train_dataloader = DataLoader(
+        train_dataset,
         batch_size=batch_size,
-        shuffle=False,
-        val_ratio=0.2,
-        random_state=seed
+        shuffle=False
     )
-    model_selector = ModelSelector(
-        "timm", 
-        num_classes, 
-        model_name='resnet18', 
-        pretrained=True
-    )    
+    val_dataloader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False
+    )
+    
+    ## 학습 모델
+    if model_type == "cnn":
+        model_selector = ModelSelector(
+            "cnn", 
+            num_classes, 
+        )
+    elif model_type == 'timm_resnet18':
+        model_selector = ModelSelector(
+            "timm", 
+            num_classes, 
+            model_name='resnet18', 
+            pretrained=True
+        )
+    
     model = model_selector.get_model()
-    optimizer = get_optimizer(model, 'adam', lr)
-    loss = CustomLoss()
     
-    # 스케줄러 초기화
-    scheduler_step_size = 30 # int 30
-    scheduler_gamma = 0.1 # float 0.1
+    ## 옵티마이저
+    optimizer = get_optimizer(model, optimizer_type, lr)
+
+    ## 손실 함수
+    if loss_type == 'CE':
+        loss = CustomLoss()
     
+    ## Scheduler 관련
+    scheduler_gamma = args.lr_scheduler_gamma # float 0.1
     steps_per_epoch = len(train_dataloader)
     
-    epochs_per_lr_decay = 2
+    epochs_per_lr_decay = args.lr_scheduler_epochs_per_decay
     scheduler_step_size = steps_per_epoch * epochs_per_lr_decay
     
     scheduler = optim.lr_scheduler.StepLR(
@@ -101,6 +123,7 @@ def run_train():
     
     model.to(device)
     
+    ## 학습 시작
     trainer = Trainer(
         model=model,
         device=device,
@@ -120,23 +143,48 @@ def run_train():
     
     matrics_info = None
 
-def parse_args_and_config():
+def parse_args_and_config() -> Namespace:
     parser = argparse.ArgumentParser()
     
+    parser.add_argument('--mode', type=str, default='train', help='Select mode train or test default is train', action='store')
+    parser.add_argument('--device', type=str, default='cpu', help='Select device to run, default is cpu', action='store')
     parser.add_argument('--data_root', type=str, default='./data', help='Path to data root', action='store')
     parser.add_argument('--train_csv', type=str, default='./data/train.csv', help='Path to train csv', action='store')
     parser.add_argument('--val_csv', type=str, default='./data/val.csv', help='Path to val csv', action='store')
+    parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
+    parser.add_argument('--num_classes', type=int, default=500, help="Select number of classes, default is 500", action='store')
     parser.add_argument('--auto_split', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
-    parser.add_argument('--')
+    parser.add_argument('--split_seed', type=int, default=42, help='Set split_seed, default is 42', action='store')
+    parser.add_argument('--stratify', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
+    parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
+    parser.add_argument('--lr', type=float, default=0.01, help='Select Learning Rate, default is 0.01', action='store')
+    parser.add_argument('--lr_scheduler', type=str, default="stepLR", help='Select LR scheduler, default is stepLR', action='store')
+    parser.add_argument('--lr_scheduler_gamma', type=float, default=0.1, help='Select LR scheduler gamma, default is 0.1', action='store')
+    parser.add_argument('--lr_scheduler_epochs_per_decay', type=int, default=2, help='Select LR scheduler epochs_per_decay, default is 2', action='store')
+    parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
+    parser.add_argument('--loss', type=str, default='CE', help='Select Loss, default is Cross Entropy(CE)', action='store')
+    parser.add_argument('--optim', type=str, default='adam', help='Select a optimizer, default is adam', action='store')
+    parser.add_argument('--epochs', type=int, default='100', help='Select total epochs to train, default is 100 epochs', action='store')
+    parser.add_argument('--r_epochs', type=int, default='2', help='Select total data swap epochs, default is last 2 epochs', action='store')
+    parser.add_argument('--seed', type=int, default=2024, help='Select seed, default is 2024', action='store')
+    parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
     
+    return parser.parse_args()
 
 if __name__=='__main__':
     
+    ## 설정 및 하이퍼파라미터 가져오기
+    args = parse_args_and_config()
+    
     # cuda 적용
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if args.device.lower() == 'cuda':
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        assert device == 'cuda', 'cuda로 수행하려고 하였으나 cuda를 찾을 수 없습니다.'
+    else:
+        device = 'cpu'
 
     # seed값 설정
-    seed = 2024
+    seed = args.seed
     deterministic = True
 
     random.seed(seed) # random seed 고정
@@ -148,6 +196,6 @@ if __name__=='__main__':
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    run_train()
+    run_train(args)
     
     
