@@ -5,27 +5,28 @@ python train.py \
     --mode train \
     --device cuda \
     --data_root ./data \
-    --train_csv ./data/train.csv \
+    --train_csv ./data/train1.csv \
     --val_csv ./data/val.csv \
-    --height 224 \
-    --width 224 \
+    --height 384 \
+    --width 384 \
     --num_classes 500 \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
     --model timm-resnet50 \
-    --lr 0.001 \
+    --lr 0.01 \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
-    --batch 64 \
+    --batch 8 \
     --loss CE \
     --optim adam \
-    --epochs 20 \
+    --epochs 50 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --early_stopping 10
+    --augmentations hflip_vflip_rotate\
+    --early_stopping 10 \
 #    --resume True \
 #    --weights_path ./checkpoints/checkpoint_epoch_16.pth
 

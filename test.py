@@ -49,6 +49,7 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
     parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
     parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
+    parser.add_argument('--augmentations', type=str, default="hflip_vflip_rotate", help='Select augmentations to use, default is hflip_vflip_rotate', action='store')
     
     return parser.parse_args()
 
@@ -67,7 +68,7 @@ if __name__=='__main__':
     num_classes = args.num_classes
     
     transform_selector = TransformSelector(transform_type=args.transform_type)
-    transform = transform_selector.get_transform(augment=False, height=args.height, width=args.width)
+    transform = transform_selector.get_transform(augment=False, height=args.height, width=args.width, augment_list=args.augmentations)
     
     test_dataset = CustomDataset(
         root_dir=test_data_dir,
