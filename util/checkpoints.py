@@ -1,13 +1,14 @@
 import torch
 
-def save_checkpoint(model, optimizer, epoch, loss, filepath):
+def save_checkpoint(model, optimizer, scheduler, epoch, loss, filepath):
     checkpoint = {
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
         'loss': loss
     }
-    torch.save(checkpoint, filepath) ## 제대로 저장되고 불러와지는지 확인해볼 것 => 냅둬도 괜찮을 듯
+    torch.save(checkpoint, filepath) 
     print(f"Checkpoint saved at {filepath}")
 
 def load_checkpoint(filepath, model, optimizer):

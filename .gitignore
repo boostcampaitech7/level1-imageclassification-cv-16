@@ -1,6 +1,8 @@
 /checkpoints
 /wandb
 /data
+baseline_code.ipynb
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -119,3 +121,7 @@ __MACOSX/
 
 # data.zip
 data.tar.gz
+
+nohup.out
+
+*.csv
