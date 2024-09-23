@@ -50,8 +50,12 @@ def run_train(args:Namespace) -> None:
     num_classes = args.num_classes
     r_epoch = args.r_epochs
     
+    ## 학습 재개 정보
+    resume = args.resume
+    weights_path = args.weights_path
+    
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    wandb.init(project='my-test-project', config=config)
+    # wandb.init(project='my-test-project', config=config)
     
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
@@ -129,6 +133,8 @@ def run_train(args:Namespace) -> None:
     trainer = Trainer(
         model=model,
         device=device,
+        resume=resume,
+        weights_path=weights_path,
         train_loader=train_dataloader,
         val_loader=val_dataloader,
         optimizer=optimizer,
@@ -170,6 +176,9 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--r_epochs', type=int, default='2', help='Select total data swap epochs, default is last 2 epochs', action='store')
     parser.add_argument('--seed', type=int, default=2024, help='Select seed, default is 2024', action='store')
     parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
+    
+    parser.add_argument('--resume', type=bool, default=False, help='resuming training, default is False meaning new training (requires weights_path for checkpoints)', action='store')
+    parser.add_argument('--weights_path', type=str, default=None, help='Path to resuming weight_path, default is None', action='store')
     
     return parser.parse_args()
 
