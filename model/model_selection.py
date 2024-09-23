@@ -7,8 +7,11 @@ from model.torchvision_model import TorchvisionModel
 from model.timm import TimmModel
 from model.resnet18 import ResNetModel
 from model.efficientnet import EfficientNetB0
+from model.efficientnet_timm import EfficientNetModel
 from model.vit import VisionTransformer
 from model.mobilenet import MobileNetV1
+
+#cnn, torchvision, timm, resnet, efficientnet, vit, mobilenet
 
 class ModelSelector:
     """
@@ -49,6 +52,9 @@ class ModelSelector:
         # EfficientNet
         elif model_type == 'efficientnet':
             self.model = EfficientNetB0(num_classes=num_classes)
+
+        elif model_type == 'effi':
+            self.model = EfficientNetModel(num_classes=num_classes, **kwargs)
 
         # ViT
         elif model_type == 'vit':
