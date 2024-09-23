@@ -41,6 +41,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
 
     def save_checkpoint_tmp(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
@@ -51,12 +52,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
     def final_save_model(self, epoch, loss) -> None:
-        # checkpoints 폴더가 없으면 생성
-        checkpoint_dir = 'checkpoints'
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        
         # 체크포인트 저장
-        final_checkpoint_filepath = os.path.join(checkpoint_dir, 'final_checkpoint.pth')
+        final_checkpoint_filepath = os.path.join(self.checkpoint_dir, 'final_checkpoint.pth')
         save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
@@ -113,6 +110,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
+        
         for epoch in range(self.epochs):
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
