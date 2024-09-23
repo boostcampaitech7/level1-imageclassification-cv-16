@@ -30,14 +30,14 @@ def run_train():
     val_data_info_file = "./data/val.csv"
     save_result_path = "./train_result"
     
-    epochs = 10
+    epochs = 5
     batch_size = 64
     lr = 0.001
     num_classes = 500
     r_epoch = 2
     
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    wandb.init(project='my-test-project', config=config)
+    wandb.init(project='Project1', config=config)
     
     transform_selector = TransformSelector(transform_type = "albumentations")
     
@@ -83,7 +83,7 @@ def run_train():
     model_selector = ModelSelector(
         "timm", 
         num_classes, 
-        model_name='resnet18', 
+        model_name='efficientnet_b0', 
         pretrained=True
     )    
     model = model_selector.get_model()

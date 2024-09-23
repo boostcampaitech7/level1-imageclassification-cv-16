@@ -50,7 +50,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.checkpoint_dir = "./checkpoints"
 
         # wandb 익명 모드로 초기화
-        wandb.init(project="project1", anonymous="allow")
+        #wandb.init(project="Project1", anonymous="allow")
         wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
 
 
@@ -106,7 +106,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         avg_train_acc = train_correct / len(self.train_loader.dataset)
 
         # wandb에 학습 손실 및 정확도 로깅
-        wandb.log({'Train Loss': avg_train_loss, 'Train Accuracy': avg_train_acc})
+        #wandb.log({'Train Loss': avg_train_loss, 'Train Accuracy': avg_train_acc})
         
         #return avg_train_loss, avg_train_acc
     
@@ -122,6 +122,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         total_loss = 0.0
         progress_bar = tqdm(val_loader, desc="Validating", leave=False)
         
+        global log_images
+        log_images= []
         with torch.no_grad():
             for images, targets in progress_bar:
                 images, targets = images.to(self.device), targets.to(self.device)
@@ -135,13 +137,24 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 val_correct += (outputs == targets).sum().item()
                 progress_bar.set_postfix(loss=loss.item())
 
+                #if (outputs == targets).sum().item() == 0: #틀린 거면
+                #log_images.append(wandb.Image(images[0], caption="Pred: {} Truth: {}".format(outputs[0].item(), targets[0])))    
+            # 예측과 실제 값이 다른 경우만 이미지 로그
+                for i in range(len(images)):
+                    if outputs[i].item() != targets[i].item():
+                        caption = "Pred: {} Truth: {}".format(outputs[i].item(), targets[i].item())
+                        log_images.append(wandb.Image(images[i], caption=caption))
+
+
+
+        #wandb.log({"Test Images": log_images})
         #wandb
-        avg_val_loss = total_loss / len(self.val_loader)
-        avg_val_acc = val_correct / len(self.val_loader.dataset)
+        #avg_val_loss = total_loss / len(self.val_loader)
+        #avg_val_acc = val_correct / len(self.val_loader.dataset)
         # wandb에 검증 손실 및 정확도 로깅 (필요할 때만)
-        wandb.log({'Val Loss': avg_val_loss, 'Val Accuracy': avg_val_acc})
+        #wandb.log({'Val Loss': avg_val_loss, 'Val Accuracy': avg_val_acc})
         #return avg_val_loss, avg_val_acc        # 전체 데이터셋에 대한 정확도     
-        
+        #wandb.log({"Test Images": log_images})
         
         return total_loss, val_correct
 
@@ -170,8 +183,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
-            # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
-            
+            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+
+        
             # 체크포인트 trainloss에 대해 찍어야하?
             # self.save_checkpoint_tmp(epoch, val_loss)
             self.save_checkpoint_tmp(epoch, train_loss)
@@ -180,3 +194,4 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
         self.final_save_model(epoch, train_loss)
+        wandb.finish()
