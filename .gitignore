@@ -1,6 +1,8 @@
 /checkpoints
 /wandb
 /data
+baseline_code.ipynb
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

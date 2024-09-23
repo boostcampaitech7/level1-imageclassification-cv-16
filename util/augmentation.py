@@ -1,3 +1,4 @@
+import cv2
 import torch
 import random
 import torchvision.transforms as T
@@ -8,12 +9,14 @@ from typing import Union, Tuple
 
 #기본 트랜스폼 클래스
 class BasicTransforms:
-    def __init__(self, augment=False) -> None:
+    def __init__(self, augment=False, height: int=224, width: int=224) -> None:
         self.augment = augment
+        self.height = height
+        self.width = width
 
         # 기본 트랜스폼 (증강 없음)
         self.base_transform = T.Compose([
-            T.Resize((256, 256)),
+            T.Resize((self.width, self.height)),
             T.ToTensor(),
         ])
 
@@ -22,7 +25,7 @@ class BasicTransforms:
             T.RandomHorizontalFlip(p=0.5), #50% 확률로 이미지 뒤집
             T.RandomRotation(degrees=30), #최대 30도로 회전함
             T.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2), #색깔 변경
-            T.Resize((256, 256)), #리사이즈
+            T.Resize((self.height, self.width)), #리사이즈
             T.ToTensor(), #이미지를 텐서로 변환
         ])
 
@@ -34,11 +37,13 @@ class BasicTransforms:
 
 # Albumentation 기반 트랜스폼
 class AlbumentationsTransforms:
-    def __init__(self, augment=False) -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
+    def __init__(self, augment=False, height: int=224, width: int=224) -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
         self.augment = augment
+        self.height = height
+        self.width = width
 
         common_transform = [
-            A.Resize(224, 224),
+            A.Resize(self.height, self.width),
             A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),  # 정규화
             ToTensorV2() #이미지를 텐서로 변환
         ]
@@ -48,10 +53,11 @@ class AlbumentationsTransforms:
 
         # Albumentations 증강을 사용한 트랜스폼 (랜덤 자르기, 플립, 회전...)
         self.augment_transform = A.Compose([
-            A.HorizontalFlip(p=0.5), #수평 플립
+            # A.HorizontalFlip(p=0.5), #수평 플립
             A.VerticalFlip(p=0.5), #수직 플립
-            A.Rotate(limit=45), #45도 제한 랜덤 회전
-            A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
+            # A.RandomCrop(height=self.height, width=self.width, p=0.5),
+            A.Rotate(limit=(-90, 90), border_mode=cv2.BORDER_CONSTANT, fill_value=(255, 255, 255)), #45도 제한 랜덤 회전
+            # A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
         ] + common_transform)
 
     def __call__(self, image) -> torch.Tensor: #이미지에 트랜스폼 적용
@@ -111,29 +117,33 @@ class MixUpTransforms:
 
 # 트랜스폼 데이터 증강 라이브러리와 기법을 선택하는 클래스
 class TransformSelector: #사용자가 지정한 transform_type에 따라 서로 다른 변환 객체를 반환하는 구조
-
     def __init__(self, transform_type: str) -> None:
         # 입력받은 transform_type을 소문자로 변환하여 저장
         self.transform_type = transform_type.lower()
         # 인자 확인해서 변환 라이브러리를 선택함
 
-    def get_transform(self, augment: bool=False, alpha: float = 1.0) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
+    def get_transform(
+            self, 
+            augment: bool=False, 
+            alpha: float=1.0,
+            height: int=224,
+            width: int=224
+        ) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
         """
         augment: 데이터 증강 여부
         alpha: MixUp이나 CutMix의 파라미터
         """
         if self.transform_type == 'basic':
-            return BasicTransforms(augment=augment)
+            return BasicTransforms(augment=augment, height=height, width=width)
 
         elif self.transform_type == 'albumentations':
-            return AlbumentationsTransforms(augment=augment)
+            return AlbumentationsTransforms(augment=augment, height=height, width=width)
         
         elif self.transform_type == 'cutmix':
             return CutMixTransforms(alpha=alpha)
 
         elif self.transform_type == 'mixup':
             return MixUpTransforms(alpha=alpha)
-
 
         else:
             raise ValueError(f"Unknown transform type: {self.transform_type}")
