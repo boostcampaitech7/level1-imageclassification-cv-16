@@ -3,6 +3,8 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from datetime import datetime
+from argparse import Namespace
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.checkpoints import save_checkpoint
@@ -25,6 +27,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         val_total: int,
         r_epoch: int,
         early_stopping: int,
+        args: Namespace
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -44,19 +47,29 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.best_val_loss = float('inf')
         self.best_val_acc = 0.0
-        self.checkpoint_dir = "./checkpoints"
-        os.makedirs(self.checkpoint_dir, exist_ok=True)
         
         self.start_epoch = 0
         self.resume = resume # 학습 재개를 위한 것인지
         self.weights_path = weights_path # 학습 재개를 위해 불러와야할 가중치 주소
         
         self.early_stopping = early_stopping
+        
+        now = datetime.now()
+        self.time = now.strftime('%Y-%m-%d_%H.%M.%S')
+        self.checkpoint_dir = "./checkpoints/" + self.time
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
+        
+        self.create_config_txt(self.checkpoint_dir, args)
+        
+    def create_config_txt(self, root_path, args):
+        with open(os.path.join(root_path, "config.txt"), "w") as f:
+            for arg, value in vars(args).items():
+                f.write(f"--{arg} {value} \\ \n")
 
     def save_checkpoint_tmp(self, epoch, val_loss, val_acc) -> None:
         if val_acc >= self.best_val_acc+0.01:
             self.best_val_loss = val_loss
-            self.best_acc_loss = val_acc
+            self.best_val_acc = val_acc
             checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
             save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, val_loss, checkpoint_filepath)
             print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
@@ -65,7 +78,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
     def final_save_model(self, epoch, loss) -> None:
         # 체크포인트 저장
         final_checkpoint_filepath = os.path.join(self.checkpoint_dir, 'final_checkpoint.pth')
-        save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
+        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, loss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader) -> float:

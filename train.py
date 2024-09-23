@@ -156,7 +156,8 @@ def run_train(args:Namespace) -> None:
         train_total=train_df.shape[0],
         val_total=val_df.shape[0],
         r_epoch=r_epoch,
-        early_stopping=early_stopping
+        early_stopping=early_stopping,
+        args=args
     )
     
     trainer.train()

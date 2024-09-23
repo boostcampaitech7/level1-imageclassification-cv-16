@@ -43,6 +43,8 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
     parser.add_argument('--output_path', type=str, default='output.csv', help='Path for csv result', action='store')
     parser.add_argument('--checkpoint_path', type=str, default='./checkpoints/final_checkpoint.pth', help='Path to checkpoints of the model', action='store')
+    parser.add_argument('--height', type=int, default=224, help="Select input img height, default is 224", action='store')
+    parser.add_argument('--width', type=int, default=224, help="Select input img width, default is 224", action='store')
     parser.add_argument('--num_classes', type=int, default=500, help="Select number of classes, default is 500", action='store')
     parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
     parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
@@ -65,7 +67,7 @@ if __name__=='__main__':
     num_classes = args.num_classes
     
     transform_selector = TransformSelector(transform_type=args.transform_type)
-    transform = transform_selector.get_transform(augment=False)
+    transform = transform_selector.get_transform(augment=False, height=args.height, width=args.width)
     
     test_dataset = CustomDataset(
         root_dir=test_data_dir,
@@ -81,15 +83,19 @@ if __name__=='__main__':
         drop_last=False
     )
 
-    if args.model == "timm-resnet18":
+    ## 학습 모델
+    if 'timm' in args.model:
         model_selector = ModelSelector(
-            model_type="timm",
-            num_classes=num_classes,
-            model_name="resnet18",
+            "timm", 
+            num_classes, 
+            model_name=args.model.split("-")[-1], 
             pretrained=True
         )
     else:
-        raise Exception('모델을 찾을 수 없습니다.')
+        model_selector = ModelSelector(
+            args.model,
+            num_classes,
+        )
 
     model = model_selector.get_model()
     
