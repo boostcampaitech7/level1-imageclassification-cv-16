@@ -20,7 +20,7 @@ python train.py \
     --batch 64 \
     --loss CE \
     --optim adam \
-    --epochs 20 \
+    --epochs 10 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
