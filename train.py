@@ -94,20 +94,18 @@ def run_train(args:Namespace) -> None:
     )
     
     ## 학습 모델
-    if model_type == "cnn":
-        model_selector = ModelSelector(
-            "cnn", 
-            num_classes, 
-        )
-    elif model_type == 'timm-resnet18':
+    if 'timm' in model_type:
         model_selector = ModelSelector(
             "timm", 
             num_classes, 
-            model_name='resnet18', 
+            model_name=model_type.split("-")[-1], 
             pretrained=True
         )
     else:
-        raise Exception('모델을 찾을 수 없습니다.')
+        model_selector = ModelSelector(
+            model_type,
+            num_classes,
+        )
     
     model = model_selector.get_model()
     
@@ -119,18 +117,27 @@ def run_train(args:Namespace) -> None:
         loss = CustomLoss()
     
     ## Scheduler 관련
-    scheduler_gamma = args.lr_scheduler_gamma # float 0.1
-    steps_per_epoch = len(train_dataloader)
-    
-    epochs_per_lr_decay = args.lr_scheduler_epochs_per_decay
-    scheduler_step_size = steps_per_epoch * epochs_per_lr_decay
-    
-    scheduler = optim.lr_scheduler.StepLR(
-        optimizer,
-        step_size=scheduler_step_size,
-        gamma=scheduler_gamma
-    )
-    
+    if args.lr_scheduler == 'stepLR':
+        scheduler_gamma = args.lr_scheduler_gamma # float 0.1
+        steps_per_epoch = len(train_dataloader)
+        
+        epochs_per_lr_decay = args.lr_scheduler_epochs_per_decay
+        scheduler_step_size = steps_per_epoch * epochs_per_lr_decay
+        
+        scheduler = optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=scheduler_step_size,
+            gamma=scheduler_gamma
+        )
+    elif args.lr_scheduler == 'ReduceLROnPlateau':
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=args.lr_scheduler_gamma,
+            patience=10,
+            verbose=True
+        )
+        
     model.to(device)
     
     ## 학습 시작

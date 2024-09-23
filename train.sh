@@ -12,9 +12,9 @@ python train.py \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-resnet18 \
+    --model timm-resnet50 \
     --lr 0.001 \
-    --lr_scheduler stepLR \
+    --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
     --batch 64 \

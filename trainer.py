@@ -84,7 +84,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             loss = self.loss_fn(outputs, targets)
             loss.backward()
             self.optimizer.step()
-            self.scheduler.step()
+            
+            if type(self.scheduler) != optim.lr_scheduler.ReduceLROnPlateau:
+                self.scheduler.step()
             
             total_loss += loss.item() * targets.shape[0]
 
@@ -151,7 +153,10 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # self.save_checkpoint_tmp(epoch, val_loss)
             self.save_checkpoint_tmp(epoch, val_loss, val_acc)
             
-            self.scheduler.step()
+            if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
+                self.scheduler.step(val_loss)
+            else:
+                self.scheduler.step()
             
             if val_acc > self.best_val_acc:
                 count = 0
