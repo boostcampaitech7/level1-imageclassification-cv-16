@@ -35,6 +35,10 @@ def run_train():
     lr = 0.001
     num_classes = 500
     r_epoch = 2
+
+    model_type = 'timm'
+    model_name = 'resnet18'
+    optimizer_name = 'adam'
     
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
     wandb.init(project='my-test-project', config=config)
@@ -75,13 +79,13 @@ def run_train():
         random_state=seed
     )
     model_selector = ModelSelector(
-        "timm", 
-        num_classes, 
-        model_name='resnet18', 
+        model_type=model_type, 
+        num_classes=num_classes, 
+        model_name=model_name, 
         pretrained=True
     )    
     model = model_selector.get_model()
-    optimizer = get_optimizer(model, 'adam', lr)
+    optimizer = get_optimizer(model, optimizer_name, lr)
     loss = CustomLoss()
     
     # 스케줄러 초기화
@@ -113,7 +117,12 @@ def run_train():
         result_path=save_result_path,
         train_total=train_df.shape[0],
         val_total=val_df.shape[0],
-        r_epoch=r_epoch
+        r_epoch=r_epoch,
+        seed=seed,
+        model_type=model_type,
+        model_name=model_name,
+        optimizer_name=optimizer_name,
+        lr=lr
     )
     
     trainer.train()

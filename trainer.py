@@ -21,7 +21,12 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         result_path: str,
         train_total: int,
         val_total: int,
-        r_epoch: int = 0
+        model_type: str,
+        model_name: str,
+        optimizer_name: str,
+        lr: int,
+        r_epoch: int = 0,
+        seed: int = 42,
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -37,28 +42,34 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.lowest_loss = float('inf') # 가장 낮은 Loss를 저장할 변수
         self.train_total = train_total
         self.val_total = val_total
-        self.r_epoch = r_epoch
+        self.r_epoch = r_epoch  # dataset 뒤집기
+        self.seed = seed
         
-        self.val_acc = 0.0
+        self.best_val_acc = 0.0
         self.best_val_loss = float('inf')
         self.checkpoint_dir = "./checkpoints"
+        self.model_type = model_type
+        self.model_name = model_name
+        self.optimizer_name = optimizer_name
+        self.lr = lr
 
-    def save_checkpoint_tmp(self, epoch, val_loss):
-        if val_loss < self.best_val_loss:
+    def save_checkpoint_tmp(self, epoch, val_loss, val_acc=0.0):
+        if val_acc >= self.best_val_acc+0.01:
+            self.best_val_acc = val_acc
             self.best_val_loss = val_loss
             checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
-            save_checkpoint(self.model, self.optimizer, epoch, val_loss, checkpoint_filepath)
-            print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
+            save_checkpoint(self.model, self.optimizer, epoch, val_loss, val_acc, self.seed, checkpoint_filepath, self.model_type, self.model_name, self.optimizer_name, self.lr, self.scheduler)
+            print(f"Checkpoint updated at {epoch + 1} epoch, {val_acc:.4f} val_acc and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def final_save_model(self, epoch, loss) -> None:
+    def final_save_model(self, epoch, loss, val_acc) -> None:
         # checkpoints 폴더가 없으면 생성
         checkpoint_dir = 'checkpoints'
         os.makedirs(checkpoint_dir, exist_ok=True)
         
         # 체크포인트 저장
         final_checkpoint_filepath = os.path.join(checkpoint_dir, 'final_checkpoint.pth')
-        save_checkpoint(self.model, self.optimizer, epoch, loss, final_checkpoint_filepath)
+        save_checkpoint(self.model, self.optimizer, epoch, loss, val_acc, self.seed, final_checkpoint_filepath, self.model_type, self.model_name, self.optimizer_name, self.lr, self.scheduler)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader) -> float:
@@ -132,10 +143,6 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
                 val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
             
-            ####################### 체크포인트: val_acc가 1% 이상 올랐을 때 저장하기 위해 acc 찾아내 저장하는 위치????
-            # if val_acc >= self.val_acc+0.01:
-            #     self.val_acc = val_acc
-            
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
@@ -143,9 +150,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             
             # 체크포인트 trainloss에 대해 찍어야하?
             # self.save_checkpoint_tmp(epoch, val_loss)
-            self.save_checkpoint_tmp(epoch, train_loss)
+            self.save_checkpoint_tmp(epoch, train_loss, val_acc)
             
             self.scheduler.step()
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
-        self.final_save_model(epoch, train_loss)
+        self.final_save_model(epoch, val_loss, val_acc)
