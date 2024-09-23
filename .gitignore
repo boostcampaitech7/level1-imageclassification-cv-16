@@ -119,3 +119,7 @@ __MACOSX/
 
 # data.zip
 data.tar.gz
+
+nohup.out
+
+*.csv

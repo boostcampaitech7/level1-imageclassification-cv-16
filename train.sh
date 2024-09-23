@@ -9,7 +9,7 @@ python train.py \
     --auto_split True \
     --split_seed 42 \
     --stratify True \
-    --model timm_resnet18 \
+    --model timm-resnet18 \
     --lr 0.001 \
     --lr_scheduler stepLR \
     --lr_scheduler_gamma 0.1 \
@@ -21,7 +21,4 @@ python train.py \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-
-
-
 
