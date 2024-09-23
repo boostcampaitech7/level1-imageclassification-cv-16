@@ -5,6 +5,8 @@ python test.py \
     --test_csv ./data/test.csv \
     --output_path output.csv \
     --checkpoint_path ./checkpoints/final_checkpoint.pth \
+    --height 224 \
+    --width 224 \
     --num_classes 500 \
     --model timm-resnet18 \
     --batch 64 \
