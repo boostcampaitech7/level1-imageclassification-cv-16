@@ -136,7 +136,7 @@ def run_train(args:Namespace) -> None:
             optimizer,
             mode='min',
             factor=args.lr_scheduler_gamma,
-            patience=10,
+            patience=2,
             verbose=True
         )
 
