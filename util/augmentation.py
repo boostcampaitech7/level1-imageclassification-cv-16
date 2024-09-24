@@ -56,6 +56,7 @@ class AlbumentationsTransforms:
 
         full_aug_list = {'hflip': A.HorizontalFlip(p=0.5), #수평 플립
                          'vflip': A.VerticalFlip(p=0.5), #수직 플립
+                         'dropout': A.CoarseDropout(min_holes=1, max_holes=4, min_height=64, max_height=64, min_width=128, max_width=128, fill_value=(255, 255, 255), p=0.5),
                          'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=0.5), #45도 제한 랜덤 회전
                          'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
                          'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
@@ -65,7 +66,6 @@ class AlbumentationsTransforms:
                          'dilation': A.Morphological(scale=(1, 2), operation='dilation', p=0.5),
                          'noise': A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
                          'blur': A.MotionBlur(blur_limit=(3, 7), p=0.5),
-                         'dropout': A.CoarseDropout(min_holes=1, max_holes=4, min_height=64, max_height=64, min_width=128, max_width=128, fill_value=(255, 255, 255), p=0.5),
                          }
         # ** 여기가서 확인하고 추가해서 사용해 -> https://demo.albumentations.ai/ **
         aug_list = [v for k, v in full_aug_list.items() if k in self.augment_list]
