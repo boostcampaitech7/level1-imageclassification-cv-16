@@ -186,15 +186,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
-        
-        table = wandb.Table(columns=["Test"])
-        # 테이블에 이미 해당 컬럼이 있는지 확인
-        if "Test" not in table.columns:
-            table.add_column("Test", log_images)
-        else:
-            print("Column 'Test' already exists.")
-        
-
+    
         for epoch in range(self.epochs):
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
@@ -216,11 +208,11 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
-            table.add_data(*[None])  # 빈 값을 먼저 추가해 테이블의 크기를 맞춤
-            column_name = f"Test_Epoch_{epoch+1}"
-            table.add_column(column_name, log_images)
+            #table.add_data(*[None])  # 빈 값을 먼저 추가해 테이블의 크기를 맞춤
+            #column_name = f"Test_Epoch_{epoch+1}"
+            #table.add_column(column_name, log_images)
             #table.add_column("Test", log_images)  # 이후 컬럼 추가
-            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': table}, step=epoch)
+            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
             #andb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss}, step=epoch)
 
         
