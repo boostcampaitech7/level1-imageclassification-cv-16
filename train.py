@@ -135,9 +135,14 @@ def run_train(args:Namespace) -> None:
             patience=10,
             verbose=True
         )
-        
-    model.to(device)
-    
+
+    model.to(device)    
+
+    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr, 
+              'model': model, 'device': device, 
+              'optimizer': optimizer, 'scheduler': scheduler, 'loss_fn': loss}
+    wandb.init(project='Project1', config=config)    
+
     ## 학습 시작
     trainer = Trainer(
         model=model,
@@ -157,12 +162,6 @@ def run_train(args:Namespace) -> None:
         early_stopping=early_stopping,
         args=args
     )
-    
-    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr, 
-              'model': model, 'device': device, 
-              'optimizer': optimizer, 'scheduler': scheduler, 'loss_fn': loss,
-              }
-    wandb.init(project='Project1', config=config)
 
     trainer.train()
     
