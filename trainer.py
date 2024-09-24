@@ -2,12 +2,15 @@
 import os
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
+import wandb
 from datetime import datetime
 from argparse import Namespace
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.checkpoints import save_checkpoint
+
 
 class Trainer: # 변수 넣으면 바로 학습되도록
     def __init__( # 여긴 config로 나중에 빼야하는지 이걸 유지하는지
@@ -62,6 +65,10 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         os.makedirs(self.checkpoint_dir, exist_ok=True)
         
         self.create_config_txt(self.checkpoint_dir, args)
+
+        # wandb 익명 모드로 초기화
+        #wandb.init(project="Project1", anonymous="allow")
+        wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
         
     def create_config_txt(self, root_path, args):
         with open(os.path.join(root_path, "config.txt"), "w") as f:
@@ -119,22 +126,53 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.model.eval()
         val_correct = 0
         total_loss = 0.0
+
         progress_bar = tqdm(val_loader, desc="Validating", leave=False, disable=self.verbose)
+  
+        global log_images
+        log_images= [] #wandb 로그에 올릴 이미지 저장
         
         with torch.no_grad():
-            for images, targets in progress_bar:
+            for batch_idx, (images, targets) in enumerate(progress_bar):
                 images, targets = images.to(self.device), targets.to(self.device)
                 
+                # 모델 예측 출력 (로짓)
                 outputs = self.model(images)    
                 
-                loss = self.loss_fn(outputs, targets)
+                # 소프트맥스를 통해 확률 계산
+                probabilities = F.softmax(outputs, dim=1)
                 
+                # 손실 계산
+                loss = self.loss_fn(outputs, targets)
                 total_loss += loss.item() * targets.shape[0]
+
+                #예측 값 계산
                 outputs = torch.argmax(outputs, dim = 1)
                 val_correct += (outputs == targets).sum().item()
+
+                #진행 상황 표시
                 progress_bar.set_postfix(loss=loss.item())
-        
+
+                # 예측과 실제 값이 다른 경우만 이미지 로그
+                for i in range(len(images)):
+                    if outputs[i].item() != targets[i].item():
+                        # 예측 클래스(Pred)에 대한 확률 점수 가져오기
+                        pred_class = outputs[i].item()
+                        pred_prob = probabilities[i][pred_class].item()
+
+                        # 실제 레이블(Truth)에 대한 확률 점수 가져오기
+                        true_class = targets[i].item()
+                        true_prob = probabilities[i][true_class].item()
+
+                        # 인덱스, 예측값, 실제값(레이블), 예측 확률, 실제 확률을 캡션에 포함
+                        caption = (f"Batch: {batch_idx}, Index: {i}, "
+                               f"Pred: {pred_class} ({pred_prob*100:.2f}%), "
+                               f"Truth: {true_class} ({true_prob*100:.2f}%)")
+                        
+                        log_images.append(wandb.Image(images[i], caption=caption))
+
         progress_bar.close()
+
         return total_loss, val_correct
 
     def train(self) -> None:
@@ -165,7 +203,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
-            # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
+            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
             
             # self.save_checkpoint_tmp(epoch, val_loss)
             if val_acc > self.best_val_acc:
