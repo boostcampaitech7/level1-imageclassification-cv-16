@@ -84,7 +84,7 @@ if __name__=='__main__':
         shuffle=False,
         drop_last=False
     )
-
+    
     ## 학습 모델
     if 'timm' in args.model:
         model_selector = ModelSelector(

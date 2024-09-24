@@ -7,25 +7,25 @@ python train.py \
     --data_root ./data \
     --train_csv ./data/train1.csv \
     --val_csv ./data/val.csv \
-    --height 224 \
-    --width 224 \
+    --height 384 \
+    --width 384 \
     --num_classes 500 \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-resnet50 \
-    --lr 0.01 \
+    --model timm-timm-tf_efficientnetv2_xl.in21k_ft_in1k \
+    --lr 0.001 \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
-    --batch 64 \
+    --batch 8 \
     --loss CE \
     --optim adam \
-    --epochs 200 \
+    --epochs 100 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --augmentations hflip_vflip_rotate\
+    --augmentations vflip_rotate\
     --adjust_ratio \
     --early_stopping 30 \
 #    --resume True \

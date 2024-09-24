@@ -165,13 +165,6 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
             # self.save_checkpoint_tmp(epoch, val_loss)
-            self.save_checkpoint_tmp(epoch, val_loss, val_acc)
-            
-            if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
-                self.scheduler.step(val_loss)
-            else:
-                self.scheduler.step()
-            
             if val_acc > self.best_val_acc:
                 count = 0
             else:
@@ -179,6 +172,14 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 if count == self.early_stopping:
                     print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
                     break
+            
+            self.save_checkpoint_tmp(epoch, val_loss, val_acc)
+            
+            if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
+                self.scheduler.step(val_loss)
+            else:
+                self.scheduler.step()
+            
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
         self.final_save_model(epoch, train_loss)
