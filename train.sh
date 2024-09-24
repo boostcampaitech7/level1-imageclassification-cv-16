@@ -1,19 +1,19 @@
 # 실행은 Terminal에 sh exp.sh
 # 학습 재개를 원한다면 인자로 --resume True와 --weights_path [학습재개하고자하는 가중치 파일]을 넘겨주세요.
 # timm- 관련 모델을 사용하려고 한다면 timm-resnet50, timm-resnet18 처럼 작성해주면 됨
-python train.py \
+python -u train.py \
     --mode train \
     --device cuda \
     --data_root ./data \
     --csv_path ./data/train1.csv \
     --val_csv ./data/val.csv \
-    --height 384 \
-    --width 384 \
+    --height 224 \
+    --width 224 \
     --num_classes 500 \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-timm-tf_efficientnetv2_xl.in21k_ft_in1k \
+    --model timm-resnet50 \
     --lr 0.001 \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
@@ -27,7 +27,8 @@ python train.py \
     --transform albumentations \
     --augmentations vflip_rotate \
     --adjust_ratio \
-    --early_stopping 30
+    --early_stopping 30 \
+    --verbose
 #    --resume \
 #    --checkpoint_path ./checkpoints/checkpoint_epoch_16.pth
 

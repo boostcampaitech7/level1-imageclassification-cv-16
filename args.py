@@ -27,6 +27,8 @@ class Custom_arguments_parser:
 
         parser.add_argument('--checkpoint_path', type=str, default=None, help='Path to checkpoint, default is None', action='store')
 
+        parser.add_argument('--verbose', help='add --verbose to turn off progress bar display', action='store_true')
+
         return parser
 
     def get_parser(self) -> Namespace:
