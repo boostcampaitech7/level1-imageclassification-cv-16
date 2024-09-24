@@ -5,7 +5,7 @@ python train.py \
     --mode train \
     --device cuda \
     --data_root ./data \
-    --train_csv ./data/train1.csv \
+    --csv_path ./data/train1.csv \
     --val_csv ./data/val.csv \
     --height 384 \
     --width 384 \
@@ -25,9 +25,9 @@ python train.py \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --augmentations vflip_rotate\
+    --augmentations vflip_rotate \
     --adjust_ratio \
-    --early_stopping 30 \
-#    --resume True \
+    --early_stopping 30
+#    --resume \
 #    --weights_path ./checkpoints/checkpoint_epoch_16.pth
 

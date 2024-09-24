@@ -1,6 +1,7 @@
 import os
-import argparse
 from argparse import Namespace
+
+from args import Custom_arguments_parser
 import random
 import wandb
 import torch
@@ -32,7 +33,7 @@ def run_train(args:Namespace) -> None:
     ## 데이터 경로 및 CSV 파일 경로
     data_root = args.data_root
     train_data_dir = data_root + "/train/"
-    train_data_info_file = args.train_csv
+    train_data_info_file = args.csv_path
     val_data_info_file = args.val_csv
     save_result_path = "./train_result"
     
@@ -56,7 +57,7 @@ def run_train(args:Namespace) -> None:
     
     ## 학습 재개 정보
     resume = args.resume
-    weights_path = args.weights_path
+    weights_path = args.checkpoint_path
     
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
     # wandb.init(project='my-test-project', config=config)
@@ -164,50 +165,11 @@ def run_train(args:Namespace) -> None:
     
     matrics_info = None
 
-def parse_args_and_config() -> Namespace:
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument('--mode', type=str, default='train', help='Select mode train or test default is train', action='store')
-    parser.add_argument('--device', type=str, default='cpu', help='Select device to run, default is cpu', action='store')
-    
-    parser.add_argument('--data_root', type=str, default='./data', help='Path to data root', action='store')
-    parser.add_argument('--train_csv', type=str, default='./data/train.csv', help='Path to train csv', action='store')
-    parser.add_argument('--val_csv', type=str, default='./data/val.csv', help='Path to val csv', action='store')
-    parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
-    
-    parser.add_argument('--augmentations', type=str, default="hflip_vflip_rotate", help='Select augmentations to use, default is hflip_vflip_rotate', action='store')
-    parser.add_argument('--adjust_ratio', help='Turn True to adjust the ratio', action='store_true')
-    
-    parser.add_argument('--height', type=int, default=224, help="Select input img height, default is 224", action='store')
-    parser.add_argument('--width', type=int, default=224, help="Select input img width, default is 224", action='store')
-    parser.add_argument('--num_classes', type=int, default=500, help="Select number of classes, default is 500", action='store')
-    parser.add_argument('--auto_split', type=bool, default=True, help='Set auto_split, requires train & val csv if False', action='store')
-    parser.add_argument('--split_seed', type=int, default=42, help='Set split_seed, default is 42', action='store')
-    parser.add_argument('--stratify', type=str, default='target', help='Set balance split', action='store')
-    
-    parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
-    parser.add_argument('--lr', type=float, default=0.01, help='Select Learning Rate, default is 0.01', action='store')
-    parser.add_argument('--lr_scheduler', type=str, default="stepLR", help='Select LR scheduler, default is stepLR', action='store')
-    parser.add_argument('--lr_scheduler_gamma', type=float, default=0.1, help='Select LR scheduler gamma, default is 0.1', action='store')
-    parser.add_argument('--lr_scheduler_epochs_per_decay', type=int, default=2, help='Select LR scheduler epochs_per_decay, default is 2', action='store')
-    parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
-    parser.add_argument('--loss', type=str, default='CE', help='Select Loss, default is Cross Entropy(CE)', action='store')
-    parser.add_argument('--optim', type=str, default='adam', help='Select a optimizer, default is adam', action='store')
-    parser.add_argument('--epochs', type=int, default='100', help='Select total epochs to train, default is 100 epochs', action='store')
-    parser.add_argument('--r_epochs', type=int, default='2', help='Select total data swap epochs, default is last 2 epochs', action='store')
-    parser.add_argument('--seed', type=int, default=2024, help='Select seed, default is 2024', action='store')
-    parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
-    
-    parser.add_argument('--resume', type=bool, default=False, help='resuming training, default is False meaning new training (requires weights_path for checkpoints)', action='store')
-    parser.add_argument('--weights_path', type=str, default=None, help='Path to resuming weight_path, default is None', action='store')
-    parser.add_argument('--early_stopping', type=int, default=10, help='Select number of epochs to wait for early stoppoing', action='store')
-    
-    return parser.parse_args()
-
 if __name__=='__main__':
     
     ## 설정 및 하이퍼파라미터 가져오기
-    args = parse_args_and_config()
+    train_parser = Custom_arguments_parser(mode='train')
+    args = train_parser.get_parser()
     
     # cuda 적용
     if args.device.lower() == 'cuda':
