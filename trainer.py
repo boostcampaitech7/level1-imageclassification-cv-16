@@ -30,6 +30,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         val_total: int,
         r_epoch: int,
         early_stopping: int,
+        verbose: bool,
         args: Namespace
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
@@ -53,6 +54,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.start_epoch = 0
         self.resume = resume # 학습 재개를 위한 것인지
+        self.verbose = verbose # prgoress바 출력 유무
         self.weights_path = weights_path # 학습 재개를 위해 불러와야할 가중치 주소
         
         self.early_stopping = early_stopping
@@ -94,7 +96,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         total_loss = 0.0
         train_correct = 0
-        progress_bar = tqdm(train_loader, desc="Training", leave=False)
+        progress_bar = tqdm(train_loader, desc="Training", leave=False, disable=self.verbose)
         
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
@@ -115,8 +117,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             train_correct += acc
             progress_bar.set_postfix(loss=loss.item())
         
-        # 이거 멘토링 때 데이터셋으로 불러야 총 데이터 개수라지않았나??
         # train_loader.dataset 전체 데이터셋에 대한 정확도 계산
+        progress_bar.close()
         return total_loss, train_correct
 
     def validate(self, val_loader) -> float:
@@ -124,8 +126,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.model.eval()
         val_correct = 0
         total_loss = 0.0
-        progress_bar = tqdm(val_loader, desc="Validating", leave=False)
 
+        progress_bar = tqdm(val_loader, desc="Validating", leave=False, disable=self.verbose)
+  
         global log_images
         log_images= [] #wandb 로그에 올릴 이미지 저장
         
@@ -167,6 +170,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                                f"Truth: {true_class} ({true_prob*100:.2f}%)")
                         
                         log_images.append(wandb.Image(images[i], caption=caption))
+
+        progress_bar.close()
 
         return total_loss, val_correct
 
