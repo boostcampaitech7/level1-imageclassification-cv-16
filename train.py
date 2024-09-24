@@ -59,7 +59,7 @@ def run_train(args:Namespace) -> None:
     weights_path = args.weights_path
     
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    # wandb.init(project='my-test-project', config=config)
+    wandb.init(project='Project1', config=config)
     
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
