@@ -58,8 +58,16 @@ class AlbumentationsTransforms:
                          'vflip': A.VerticalFlip(p=0.5), #수직 플립
                          'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_REFLECT), #45도 제한 랜덤 회전
                          'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
-                         'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3) #색깔 변경
+                         'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
+                         'affine': A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
+                         'elastic': A.ElasticTransform(alpha=1, sigma=10, alpha_affine=10, p=0.5),
+                         'erosion': A.Morphological(scale=(1, 2), operation='erosion', p=0.5),
+                         'dilation': A.Morphological(scale=(1, 2), operation='dilation', p=0.5),
+                         'noise': A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+                         'blur': A.MotionBlur(blur_limit=(3, 7), p=0.5),
+                         'dropout': A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=255, p=0.5),
                          } 
+        # ** 여기가서 확인하고 추가해서 사용해 -> https://demo.albumentations.ai/ **
         aug_list = [v for k, v in full_aug_list.items() if k in self.augment_list]
 
         # Albumentations 증강을 사용한 트랜스폼 (랜덤 자르기, 플립, 회전...)

@@ -3,6 +3,7 @@
 /data
 baseline_code.ipynb
 *.csv
+gradcam/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
