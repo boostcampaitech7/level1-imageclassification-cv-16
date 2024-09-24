@@ -59,6 +59,9 @@ def run_train(args:Namespace) -> None:
     resume = args.resume
     weights_path = args.checkpoint_path
     
+    # 출력 관련 (progress bar)
+    verbose = args.verbose
+    
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
     # wandb.init(project='my-test-project', config=config)
     
@@ -158,6 +161,7 @@ def run_train(args:Namespace) -> None:
         val_total=val_df.shape[0],
         r_epoch=r_epoch,
         early_stopping=early_stopping,
+        verbose=verbose,
         args=args
     )
     
