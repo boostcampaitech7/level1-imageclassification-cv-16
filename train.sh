@@ -28,7 +28,7 @@ python train.py \
     --augmentations vflip_rotate \
     --adjust_ratio \
     --early_stopping 30
-#   -- verbose
+#   --verbose \
 #    --resume \
 #    --checkpoint_path ./checkpoints/checkpoint_epoch_16.pth
 
