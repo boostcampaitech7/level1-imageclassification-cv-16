@@ -57,9 +57,7 @@ def run_train(args:Namespace) -> None:
     ## 학습 재개 정보
     resume = args.resume
     weights_path = args.weights_path
-    
-    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    wandb.init(project='Project1', config=config)
+
     
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
@@ -160,6 +158,12 @@ def run_train(args:Namespace) -> None:
         args=args
     )
     
+    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr, 
+              'model': model, 'device': device, 
+              'optimizer': optimizer, 'scheduler': scheduler, 'loss_fn': loss,
+              }
+    wandb.init(project='Project1', config=config)
+
     trainer.train()
     
     matrics_info = None
@@ -193,7 +197,7 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
     parser.add_argument('--loss', type=str, default='CE', help='Select Loss, default is Cross Entropy(CE)', action='store')
     parser.add_argument('--optim', type=str, default='adam', help='Select a optimizer, default is adam', action='store')
-    parser.add_argument('--epochs', type=int, default='100', help='Select total epochs to train, default is 100 epochs', action='store')
+    parser.add_argument('--epochs', type=int, default='5', help='Select total epochs to train, default is 100 epochs', action='store')
     parser.add_argument('--r_epochs', type=int, default='2', help='Select total data swap epochs, default is last 2 epochs', action='store')
     parser.add_argument('--seed', type=int, default=2024, help='Select seed, default is 2024', action='store')
     parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
