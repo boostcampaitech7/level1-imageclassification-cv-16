@@ -18,10 +18,10 @@ python -u train.py \
     --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
-    --batch 8 \
+    --batch 64 \
     --loss CE \
-    --optim adam \
-    --epochs 100 \
+    --optim adamw \
+    --epochs 40 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
