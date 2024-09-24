@@ -162,7 +162,7 @@ class EfficientNet(nn.Module):
 class EfficientNetB0(nn.Module):
     """
     EfficientNet-B0 모델
-    EfficientNet의 기본 버전입니다.
+    EfficientNet의 기본 버전
     """
     def __init__(self, num_classes: int):
         super().__init__()
