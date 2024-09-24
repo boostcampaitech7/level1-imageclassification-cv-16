@@ -27,6 +27,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         val_total: int,
         r_epoch: int,
         early_stopping: int,
+        verbose: bool,
         args: Namespace
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
@@ -50,6 +51,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.start_epoch = 0
         self.resume = resume # 학습 재개를 위한 것인지
+        self.verbose = verbose # prgoress바 출력 유무
         self.weights_path = weights_path # 학습 재개를 위해 불러와야할 가중치 주소
         
         self.early_stopping = early_stopping
@@ -70,15 +72,15 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         if val_acc >= self.best_val_acc+0.01:
             self.best_val_loss = val_loss
             self.best_val_acc = val_acc
-            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
-            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, val_loss, checkpoint_filepath)
+            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_epoch{epoch + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
+            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, val_loss, checkpoint_filepath)
             print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def final_save_model(self, epoch, loss) -> None:
+    def final_save_model(self, epoch, tloss, tacc, vloss, vacc) -> None:
         # 체크포인트 저장
-        final_checkpoint_filepath = os.path.join(self.checkpoint_dir, 'final_checkpoint.pth')
-        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, loss, final_checkpoint_filepath)
+        final_checkpoint_filepath = os.path.join(self.checkpoint_dir, f'last_cp_tloss{tloss:.4f}_tacc{tacc:.4f}_vloss{vloss:.4f}_vacc{vacc:.4f}.pth')
+        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, tloss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader) -> float:
@@ -87,7 +89,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         total_loss = 0.0
         train_correct = 0
-        progress_bar = tqdm(train_loader, desc="Training", leave=False)
+        progress_bar = tqdm(train_loader, desc="Training", leave=False, disable=self.verbose)
         
         for images, targets in progress_bar:
             images, targets = images.to(self.device), targets.to(self.device)
@@ -108,8 +110,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             train_correct += acc
             progress_bar.set_postfix(loss=loss.item())
         
-        # 이거 멘토링 때 데이터셋으로 불러야 총 데이터 개수라지않았나??
         # train_loader.dataset 전체 데이터셋에 대한 정확도 계산
+        progress_bar.close()
         return total_loss, train_correct
 
     def validate(self, val_loader) -> float:
@@ -117,7 +119,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.model.eval()
         val_correct = 0
         total_loss = 0.0
-        progress_bar = tqdm(val_loader, desc="Validating", leave=False)
+        progress_bar = tqdm(val_loader, desc="Validating", leave=False, disable=self.verbose)
         
         with torch.no_grad():
             for images, targets in progress_bar:
@@ -132,6 +134,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 val_correct += (outputs == targets).sum().item()
                 progress_bar.set_postfix(loss=loss.item())
         
+        progress_bar.close()
         return total_loss, val_correct
 
     def train(self) -> None:
@@ -165,13 +168,6 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             # wandb.log({'Train Accuracy': train_acc, 'Train Loss': avg_train_loss, "Epoch": epoch + 1})
             
             # self.save_checkpoint_tmp(epoch, val_loss)
-            self.save_checkpoint_tmp(epoch, val_loss, val_acc)
-            
-            if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
-                self.scheduler.step(val_loss)
-            else:
-                self.scheduler.step()
-            
             if val_acc > self.best_val_acc:
                 count = 0
             else:
@@ -179,9 +175,17 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 if count == self.early_stopping:
                     print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
                     break
+            
+            self.save_checkpoint_tmp(epoch, val_loss, val_acc)
+            
+            if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
+                self.scheduler.step(val_loss)
+            else:
+                self.scheduler.step()
+            
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
-        self.final_save_model(epoch, train_loss)
+        self.final_save_model(epoch, train_loss, train_acc, val_loss, val_acc)
         
     def load_settings(self) -> None:
         ## 학습 재개를 위한 모델, 옵티마이저, 스케줄러 가중치 및 설정을 불러옵니다.

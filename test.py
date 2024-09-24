@@ -1,8 +1,7 @@
 import os
 import torch
 import pandas as pd
-import argparse
-from argparse import Namespace
+from args import Custom_arguments_parser
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm.auto import tqdm
@@ -34,33 +33,14 @@ def inference(
     
     return predictions
 
-def parse_args_and_config() -> Namespace:
-    parser = argparse.ArgumentParser()
-    
-    parser.add_argument('--mode', type=str, default='test', help='Select mode train or test default is train', action='store')
-    parser.add_argument('--device', type=str, default='cpu', help='Select device to run, default is cpu', action='store')
-    parser.add_argument('--data_root', type=str, default='./data', help='Path to data root', action='store')
-    parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
-    parser.add_argument('--output_path', type=str, default='output.csv', help='Path for csv result', action='store')
-    parser.add_argument('--checkpoint_path', type=str, default='./checkpoints/final_checkpoint.pth', help='Path to checkpoints of the model', action='store')
-    parser.add_argument('--height', type=int, default=224, help="Select input img height, default is 224", action='store')
-    parser.add_argument('--width', type=int, default=224, help="Select input img width, default is 224", action='store')
-    parser.add_argument('--num_classes', type=int, default=500, help="Select number of classes, default is 500", action='store')
-    parser.add_argument('--model', type=str, default='cnn', help='Select a model to train, default is cnn', action='store')
-    parser.add_argument('--batch', type=int, default=64, help='Select batch_size, default is 64', action='store')
-    parser.add_argument('--transform_type', type=str, default='albumentations', help='Select transform type, default is albumentation', action='store')
-    parser.add_argument('--augmentations', type=str, default="hflip_vflip_rotate", help='Select augmentations to use, default is hflip_vflip_rotate', action='store')
-    parser.add_argument('--adjust_ratio', help='Turn True to adjust the ratio', action='store_true')
-    
-    return parser.parse_args()
-
 if __name__=='__main__':
     # 하이퍼파라미터 가져오기
-    args = parse_args_and_config()
+    parser = Custom_arguments_parser(mode='test')
+    args = parser.get_parser()
     
     # 추론 데이터의 경로와 정보를 가진 파일의 경로를 설정.
     test_data_dir = args.data_root + "/test"
-    test_data_info_file = args.test_csv
+    test_data_info_file = args.csv_path
     checkpoint_path = args.checkpoint_path # "./train_result"
     
     # 추론 데이터의 class, image path, target에 대한 정보가 들어있는 csv파일을 읽기.
@@ -84,7 +64,7 @@ if __name__=='__main__':
         shuffle=False,
         drop_last=False
     )
-
+    
     ## 학습 모델
     if 'timm' in args.model:
         model_selector = ModelSelector(
