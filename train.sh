@@ -29,5 +29,5 @@ python train.py \
     --adjust_ratio \
     --early_stopping 30
 #    --resume \
-#    --weights_path ./checkpoints/checkpoint_epoch_16.pth
+#    --checkpoint_path ./checkpoints/checkpoint_epoch_16.pth
 
