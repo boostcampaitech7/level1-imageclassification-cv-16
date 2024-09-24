@@ -70,15 +70,15 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         if val_acc >= self.best_val_acc+0.01:
             self.best_val_loss = val_loss
             self.best_val_acc = val_acc
-            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'checkpoint_epoch_{epoch + 1}.pth')
-            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, val_loss, checkpoint_filepath)
+            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_epoch{epoch + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
+            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, val_loss, checkpoint_filepath)
             print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def final_save_model(self, epoch, loss) -> None:
+    def final_save_model(self, epoch, tloss, tacc, vloss, vacc) -> None:
         # 체크포인트 저장
-        final_checkpoint_filepath = os.path.join(self.checkpoint_dir, 'final_checkpoint.pth')
-        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, loss, final_checkpoint_filepath)
+        final_checkpoint_filepath = os.path.join(self.checkpoint_dir, f'last_cp_tloss{tloss:.4f}_tacc{tacc:.4f}_vloss{vloss:.4f}_vacc{vacc:.4f}.pth')
+        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, tloss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader) -> float:
@@ -182,7 +182,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
-        self.final_save_model(epoch, train_loss)
+        self.final_save_model(epoch, train_loss, train_acc, val_loss, val_acc)
         
     def load_settings(self) -> None:
         ## 학습 재개를 위한 모델, 옵티마이저, 스케줄러 가중치 및 설정을 불러옵니다.
