@@ -55,6 +55,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
 
 
+
     def save_checkpoint_tmp(self, epoch, val_loss):
         if val_loss < self.best_val_loss:
             self.best_val_loss = val_loss
@@ -132,6 +133,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 
                 # 모델 예측 출력 (로짓)
                 outputs = self.model(images)    
+
+                # 소프트맥스를 통해 확률 계산
+                probabilities = F.softmax(outputs, dim=1)
                 
                 # 손실 계산
                 loss = self.loss_fn(outputs, targets)
@@ -150,7 +154,19 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                 # 예측과 실제 값이 다른 경우만 이미지 로그
                 for i in range(len(images)):
                     if outputs[i].item() != targets[i].item():
-                        caption = f"Batch: {batch_idx}, Index: {i}, Pred: {outputs[i].item()}, Truth: {targets[i].item()}"
+                        # 예측 클래스에 대한 확률 점수 가져오기
+                        pred_class = outputs[i].item()
+                        pred_prob = probabilities[i][pred_class].item()
+
+                        # 실제 레이블(Truth)에 대한 확률 점수 가져오기
+                        true_class = targets[i].item()
+                        true_prob = probabilities[i][true_class].item()
+
+                    # 인덱스, 예측값, 실제값(레이블), 예측 확률, 실제 확률을 캡션에 포함
+                        caption = (f"Batch: {batch_idx}, Index: {i}, "
+                               f"Pred: {pred_class} ({pred_prob*100:.2f}%), "
+                               f"Truth: {true_class} ({true_prob*100:.2f}%)")
+                        
                         log_images.append(wandb.Image(images[i], caption=caption))
                 
                 
@@ -170,6 +186,15 @@ class Trainer: # 변수 넣으면 바로 학습되도록
 
     def train(self) -> None:
         # 전체 훈련 과정을 관리
+        
+        table = wandb.Table(columns=["Test"])
+        # 테이블에 이미 해당 컬럼이 있는지 확인
+        if "Test" not in table.columns:
+            table.add_column("Test", log_images)
+        else:
+            print("Column 'Test' already exists.")
+        
+
         for epoch in range(self.epochs):
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
@@ -191,7 +216,11 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
-            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+            table.add_data(*[None])  # 빈 값을 먼저 추가해 테이블의 크기를 맞춤
+            column_name = f"Test_Epoch_{epoch+1}"
+            table.add_column(column_name, log_images)
+            #table.add_column("Test", log_images)  # 이후 컬럼 추가
+            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': table}, step=epoch)
             #andb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss}, step=epoch)
 
         
@@ -200,6 +229,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             self.save_checkpoint_tmp(epoch, train_loss)
             
             self.scheduler.step()
+
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
         self.final_save_model(epoch, train_loss)
