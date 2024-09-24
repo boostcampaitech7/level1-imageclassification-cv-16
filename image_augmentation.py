@@ -1,8 +1,13 @@
 import os
 import cv2
+import torch
 import numpy as np
 import pandas as pd
+import torchvision.transforms as transforms
 from tqdm.auto import tqdm
+from torch.utils.data import DataLoader
+from util.data import CustomDataset
+from util.augmentation import TransformSelector
 
 root_path = './data/train'
 csv_file = "./data/train.csv"
@@ -71,12 +76,42 @@ def reset_augmentation(root_path: str, aug: str):
     except Exception as e:
         pass
 
+def compare_original_and_augmented():
+    os.makedirs("augmented_images", exist_ok=True)
+    to_pil = transforms.ToPILImage()
+    mean = torch.tensor([0.485, 0.456, 0.406])
+    std = torch.tensor([0.229, 0.224, 0.225])
+    train_df = pd.read_csv("./data/train.csv")
+    transform_selector = TransformSelector(transform_type="albumentations")
+    
+    train_dataset_no_transform = CustomDataset("./data/train/", train_df, transform=transform_selector.get_transform(augment=False))
+
+    train_dataset_with_transform = CustomDataset("./data/train/", train_df, transform=transform_selector.get_transform(augment=True, augment_list="dropout"))
+    train_loader = DataLoader(train_dataset_with_transform, batch_size=1, shuffle=False)
+
+    original_image, label = train_dataset_no_transform[1]
+    original_image = original_image * std[:, None, None] + mean[:, None, None]
+
+    pil_image = to_pil(original_image)
+    print("create original image")
+    pil_image.save(f'augmented_images/ori_{label}.jpg')
+
+    aug_batch = next(iter(train_loader))
+    aug_image, label = aug_batch[0][0], aug_batch[1][0]
+    aug_image = aug_image * std[:, None, None] + mean[:, None, None]
+
+    pil_image = to_pil(aug_image)
+    print("create augmented image")
+    pil_image.save(f'augmented_images/aug_{label}.jpg')
+
+compare_original_and_augmented()
+
 # 비율 맞춰주기
 # reset_augmentation(root_path, "white_")
 # add_white_image(root_path, "./data/train.csv")
 
 # flip_image
-flip_image(root_path, "./data/train.csv")
+# flip_image(root_path, "./data/train.csv")
 
 # flip_image 제거 
 # reset_augmentation(root_path, "flip_")

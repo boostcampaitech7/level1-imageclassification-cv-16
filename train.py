@@ -62,9 +62,6 @@ def run_train(args:Namespace) -> None:
     # 출력 관련 (progress bar)
     verbose = args.verbose
     
-    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr}
-    # wandb.init(project='my-test-project', config=config)
-    
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
     
@@ -142,9 +139,14 @@ def run_train(args:Namespace) -> None:
             patience=10,
             verbose=True
         )
-        
-    
-    
+
+    model.to(device)    
+
+    config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr, 
+              'model': model, 'device': device, 
+              'optimizer': optimizer, 'scheduler': scheduler, 'loss_fn': loss}
+    wandb.init(project='Project1', config=config)    
+
     ## 학습 시작
     trainer = Trainer(
         model=model,
@@ -165,7 +167,7 @@ def run_train(args:Namespace) -> None:
         verbose=verbose,
         args=args
     )
-    
+
     trainer.train()
     
     matrics_info = None
