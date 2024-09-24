@@ -76,8 +76,8 @@ def run_train(args:Namespace) -> None:
         random_state=42
     )
     
-    train_transform = transform_selector.get_transform(augment=True, height=height, width=width)
-    val_transform = transform_selector.get_transform(augment=False, height=height, width=width)
+    train_transform = transform_selector.get_transform(augment=True, height=height, width=width, augment_list=args.augmentations, adjust_ratio=args.adjust_ratio)
+    val_transform = transform_selector.get_transform(augment=False, height=height, width=width, augment_list=args.augmentations, adjust_ratio=args.adjust_ratio)
     
     train_dataset = CustomDataset(train_data_dir, train_df, transform=train_transform)
     val_dataset = CustomDataset(train_data_dir, val_df, transform=val_transform)
@@ -175,6 +175,9 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--train_csv', type=str, default='./data/train.csv', help='Path to train csv', action='store')
     parser.add_argument('--val_csv', type=str, default='./data/val.csv', help='Path to val csv', action='store')
     parser.add_argument('--test_csv', type=str, default='./data/test.csv', help='Path to test csv', action='store')
+    
+    parser.add_argument('--augmentations', type=str, default="hflip_vflip_rotate", help='Select augmentations to use, default is hflip_vflip_rotate', action='store')
+    parser.add_argument('--adjust_ratio', help='Turn True to adjust the ratio', action='store_true')
     
     parser.add_argument('--height', type=int, default=224, help="Select input img height, default is 224", action='store')
     parser.add_argument('--width', type=int, default=224, help="Select input img width, default is 224", action='store')

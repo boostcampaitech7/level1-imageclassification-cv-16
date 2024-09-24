@@ -137,7 +137,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
     def train(self) -> None:
         if self.resume:
             self.load_settings()
-
+        print(f"training start")
+        print(f"checkpoints saved in {self.checkpoint_dir}")
         # 전체 훈련 과정을 관리
         count = 0
         for epoch in range(self.start_epoch, self.epochs):
