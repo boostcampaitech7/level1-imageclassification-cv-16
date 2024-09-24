@@ -202,6 +202,9 @@ def parse_args_and_config() -> Namespace:
     parser.add_argument('--weights_path', type=str, default=None, help='Path to resuming weight_path, default is None', action='store')
     parser.add_argument('--early_stopping', type=int, default=10, help='Select number of epochs to wait for early stoppoing', action='store')
     
+    parser.add_argument('--random_aug_count', type=int, default=3, help="적용할 랜덤 Augmentation의 최대 개수")
+    parser.add_argument('--num_augmentations', type=int, default=1, help="생성할 증강 이미지의 개수")
+
     return parser.parse_args()
 
 if __name__=='__main__':

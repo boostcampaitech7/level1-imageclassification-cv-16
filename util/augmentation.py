@@ -38,12 +38,15 @@ class BasicTransforms:
 
 # Albumentation 기반 트랜스폼
 class AlbumentationsTransforms:
-    def __init__(self, augment=False, height: int=224, width: int=224, augment_list: str="", adjust_ratio=False) -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
+    def __init__(self, augment=False, height: int=224, width: int=224, augment_list: str="", 
+                 adjust_ratio=False, random_aug_count=None, num_augmentations=None) -> None: #True면 증강을 포함한 트랜스폼 적용, False면 기본 트랜스폼 적용
         self.augment = augment
         self.height = height
         self.width = width
         self.augment_list = augment_list
         self.adjust_ratio = adjust_ratio
+        self.random_aug_count = random_aug_count
+        self.num_augmentations = num_augmentations
 
         common_transform = [
             A.Resize(self.height, self.width),
@@ -51,20 +54,49 @@ class AlbumentationsTransforms:
             ToTensorV2() #이미지를 텐서로 변환
         ]
 
-        # 증강 없는 기본 트랜스폼
-        self.base_transform = A.Compose(common_transform)
 
-        full_aug_list = {'hflip': A.HorizontalFlip(p=0.5), #수평 플립
-                         'vflip': A.VerticalFlip(p=0.5), #수직 플립
-                         'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_REFLECT), #45도 제한 랜덤 회전
-                         'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
-                         'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3) #색깔 변경
-                         } 
+
+        full_aug_list = {
+            'hflip': A.HorizontalFlip(p=0.5), #수평 플립
+            'vflip': A.VerticalFlip(p=0.5), #수직 플립
+            'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_REFLECT), #45도 제한 랜덤 회전
+            'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
+            'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
+            'affine' : A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
+            'elastictransform': A.ElasticTransform(alpha=1, sigma=10, alpha_affine=10, p=0.5),
+            'erosion': A.Morphological(scale=(2, 3), operation='erosion', p=0.5),
+            'dilation': A.Morphological(scale=(2, 3), operation='dilation', p=0.5),
+            'gaussnoise': A.GaussNoise(var_limit=(10.0, 50.0), p=0.5),
+            'motionblur': A.MotionBlur(blur_limit=(3, 7), p=0.5),
+            'coarsedropout': A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=255, p=0.5),  # 입력 이미지에 검은색 직사각형 영역을 임의로 넣어줍
+            'clahe' :A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5),  # 입력 이미지에 대비 제한 어댑티브 히스토그램 균등화
+            'shiftscalerotate': A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
+            'randombrightnesscontrast': A.RandomBrightnessContrast(  # 평균값을 기준으로 밝기와 대비를 무작위로 변경
+                                        brightness_limit=0.2,
+                                        contrast_limit=0.2,
+                                        brightness_by_max=False,
+                                        p=1.0)
+        }
+        # 인자로 받은 Augmentation만 사용
         aug_list = [v for k, v in full_aug_list.items() if k in self.augment_list]
 
+        # random_aug_count가 설정되어 있으면, SomeOf를 사용해서 무작위로 Augmentation 선택
+        if self.random_aug_count is not None:
+            self.augment_transform = A.Compose([
+                A.SomeOf(aug_list, n = random.randint(1, self.random_aug_count), replace=False)
+            ] + common_transform)
+        else:
+            self.augment_transform = A.Compose(common_transform)  # 증강 없는 기본 트랜스폼
+
+        '''
         # Albumentations 증강을 사용한 트랜스폼 (랜덤 자르기, 플립, 회전...)
         self.augment_transform = A.Compose(aug_list + common_transform)
 
+        # 증강 없는 기본 트랜스폼
+        self.base_transform = A.Compose(common_transform)
+        '''
+        self.base_transform = A.Compose(common_transform)  # ???
+        
     def __call__(self, image:np.ndarray) -> torch.Tensor: #이미지에 트랜스폼 적용
         if self.adjust_ratio:
             image = self.adjust_img_ratio(image)
@@ -146,7 +178,9 @@ class TransformSelector: #사용자가 지정한 transform_type에 따라 서로
             height: int=224,
             width: int=224,
             augment_list: str="",
-            adjust_ratio: bool=False
+            adjust_ratio: bool=False,
+            random_aug_count: int=None,
+            num_augmentations: int=None
         ) -> Union[BasicTransforms, AlbumentationsTransforms, CutMixTransforms, MixUpTransforms]:
         """
         augment: 데이터 증강 여부
@@ -156,7 +190,7 @@ class TransformSelector: #사용자가 지정한 transform_type에 따라 서로
             return BasicTransforms(augment=augment, height=height, width=width)
 
         elif self.transform_type == 'albumentations':
-            return AlbumentationsTransforms(augment=augment, height=height, width=width, augment_list=augment_list, adjust_ratio=adjust_ratio)
+            return AlbumentationsTransforms(augment=augment, height=height, width=width, augment_list=augment_list, adjust_ratio=adjust_ratio, random_aug_count=random_aug_count, num_augmentations=num_augmentations)
         
         elif self.transform_type == 'cutmix':
             return CutMixTransforms(alpha=alpha)
