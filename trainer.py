@@ -10,6 +10,8 @@ from argparse import Namespace
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.checkpoints import save_checkpoint
+from util.data import HoDataLoader
+import pandas as pd
 
 
 class Trainer: # 변수 넣으면 바로 학습되도록
@@ -31,7 +33,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         r_epoch: int,
         early_stopping: int,
         verbose: bool,
-        args: Namespace
+        args: Namespace,
+        custom_loader: DataLoader
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -66,6 +69,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.create_config_txt(self.checkpoint_dir, args)
 
+        self.custom_loader = custom_loader
         # wandb 익명 모드로 초기화
         #wandb.init(project="Project1", anonymous="allow")
         wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
@@ -182,20 +186,23 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         print(f"checkpoints saved in {self.checkpoint_dir}")
         # 전체 훈련 과정을 관리
         count = 0
+
         for epoch in range(self.start_epoch, self.epochs):
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
             print(f"Epoch {epoch+1}/{self.epochs}")
             
+            train_loader, val_loader = self.custom_loader.get_dataloaders(epoch)
+
             if epoch < self.epochs - self.r_epoch:
-                train_loss, train_acc = self.train_epoch(self.train_loader)
-                val_loss, val_acc = self.validate(self.val_loader)
+                train_loss, train_acc = self.train_epoch(train_loader)
+                val_loss, val_acc = self.validate(val_loader)
 
                 train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
                 val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
             else:
-                train_loss, train_acc = self.train_epoch(self.val_loader)
-                val_loss, val_acc = self.validate(self.train_loader)
+                train_loss, train_acc = self.train_epoch(val_loader)
+                val_loss, val_acc = self.validate(train_loader)
             
                 train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
                 val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total

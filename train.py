@@ -17,13 +17,14 @@ from tqdm import tqdm
 
 from model import model_selection
 
-from util.data import CustomDataset, HoDataLoad   # hobbang: Dataset, DataLoader 코드 하나로 합체
+from util.data import CustomDataset
 from util.augmentation import TransformSelector
 from util.optimizers import get_optimizer
 from util.losses import CustomLoss
 from trainer import Trainer
 
 from model.model_selection import ModelSelector
+from util.data import HoDataLoader
 
 def run_train(args:Namespace) -> None:
     ## device와 seed 설정
@@ -93,7 +94,12 @@ def run_train(args:Namespace) -> None:
         batch_size=batch_size,
         shuffle=False
     )
-    
+
+    X = pd.read_csv('./data/train.csv').iloc[:, 1]
+    y = pd.read_csv('./data/train.csv').iloc[:, -1]
+    num_folds = 5
+    custom_loader = HoDataLoader(X, y, train_transform, val_transform, batch_size=batch_size, num_folds=num_folds)
+
     ## 학습 모델
     if 'timm' in model_type:
         model_selector = ModelSelector(
@@ -135,7 +141,7 @@ def run_train(args:Namespace) -> None:
             optimizer,
             mode='min',
             factor=args.lr_scheduler_gamma,
-            patience=10,
+            patience=2,
             verbose=True
         )
 
@@ -164,7 +170,8 @@ def run_train(args:Namespace) -> None:
         r_epoch=r_epoch,
         early_stopping=early_stopping,
         verbose=verbose,
-        args=args
+        args=args,
+        custom_loader=custom_loader
     )
 
     trainer.train()

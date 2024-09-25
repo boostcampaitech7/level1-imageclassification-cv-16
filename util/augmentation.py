@@ -56,9 +56,9 @@ class AlbumentationsTransforms:
 
         full_aug_list = {'hflip': A.HorizontalFlip(p=0.5), #수평 플립
                          'vflip': A.VerticalFlip(p=0.5), #수직 플립
-                         'dropout': A.CoarseDropout(min_holes=1, max_holes=4, min_height=64, max_height=64, min_width=128, max_width=128, fill_value=(255, 255, 255), p=0.5),
-                         'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=0.5), #45도 제한 랜덤 회전
-                         'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
+                         'dropout': A.CoarseDropout(min_holes=4, max_holes=8, min_height=32, max_height=32, min_width=16, max_width=16, fill_value=(255, 255, 255), p=0.5),
+                         'rotate': A.Rotate(limit=(-30, 30), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=0.5), #45도 제한 랜덤 회전
+                         'randcrop': A.RandomCrop(height=32, width=32, p=0.5),
                          'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
                          'affine': A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
                          'elastic': A.ElasticTransform(alpha=100, sigma=6, p=1),
