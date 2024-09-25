@@ -83,9 +83,9 @@ class HoDataset(Dataset):
         img = cv2.imread(os.path.join(self.root_dir, self.X[idx]), cv2.IMREAD_COLOR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         if self.is_val:
-            img = self.train_transform(img)
-        else:
             img = self.val_transform(img)
+        else:
+            img = self.train_transform(img)
         y = self.y[idx]
         if self.one_hot:
             temp = self.one_hot_template.copy()
@@ -115,8 +115,8 @@ class HoDataLoader:
         y_train, y_val = self.y[train_idx], self.y[val_idx]
 
         # 각각의 dataset 생성
-        train_dataset = HoDataset(X_train, y_train, './data/train', False, self.train_transform, self.val_transform, True)
-        val_dataset = HoDataset(X_val, y_val, './data/train', False, self.train_transform, self.val_transform, False)
+        train_dataset = HoDataset(X_train, y_train, './data/train', False, self.train_transform, self.val_transform, False)
+        val_dataset = HoDataset(X_val, y_val, './data/train', False, self.train_transform, self.val_transform, True)
 
         # PyTorch DataLoader로 변환
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
