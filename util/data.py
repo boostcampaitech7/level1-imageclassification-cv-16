@@ -105,6 +105,7 @@ class HoDataLoader:
         self.train_transform = train_transform
         self.val_transform = val_transform
         self.csv_path = csv_path
+        self.data_root = './data/train'
 
     def get_dataloaders(self, epoch):
         # epoch에 따라 해당 fold의 데이터를 반환
@@ -116,8 +117,8 @@ class HoDataLoader:
         y_train, y_val = self.y[train_idx], self.y[val_idx]
 
         # 각각의 dataset 생성
-        train_dataset = HoDataset(X_train, y_train, self.csv_path, False, self.train_transform, self.val_transform, False)
-        val_dataset = HoDataset(X_val, y_val, self.csv_path, False, self.train_transform, self.val_transform, True)
+        train_dataset = HoDataset(X_train, y_train, self.data_root, False, self.train_transform, self.val_transform, False)
+        val_dataset = HoDataset(X_val, y_val, self.data_root, False, self.train_transform, self.val_transform, True)
 
         # PyTorch DataLoader로 변환
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)

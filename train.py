@@ -104,7 +104,7 @@ def run_train(args:Namespace) -> None:
         train_transform, 
         val_transform, 
         batch_size=batch_size, 
-        csv_path=train_data_info_file, 
+        csv_path=train_data_info_file,
         num_folds=num_folds
     )
 
