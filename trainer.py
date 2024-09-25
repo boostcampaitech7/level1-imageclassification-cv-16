@@ -191,22 +191,24 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             train_loss, train_acc = 0.0, 0.0
             val_loss, val_acc = 0.0, 0.0
             print(f"Epoch {epoch+1}/{self.epochs}")
-            
-            train_loader, val_loader = self.custom_loader.get_dataloaders(epoch)
+############################################################# 매 epoch마다 k-fold cross validation이 k번 돌아가?? 여기 들여쓰기 하고 k번의 for문 필요?
+            k=5
+            for k_fold in range(k):################ 이렇게 하면 모든 fold가 매 epoch마다 한 번씩 validation set으로 사용된다고 gpt가 그랬어요
+                train_loader, val_loader = self.custom_loader.get_dataloaders(k_fold)
 
-            if epoch < self.epochs - self.r_epoch:
-                train_loss, train_acc = self.train_epoch(train_loader)
-                val_loss, val_acc = self.validate(val_loader)
+                if epoch < self.epochs - self.r_epoch:
+                    train_loss, train_acc = self.train_epoch(train_loader)
+                    val_loss, val_acc = self.validate(val_loader)
 
-                train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
-                val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
-            else:
-                train_loss, train_acc = self.train_epoch(val_loader)
-                val_loss, val_acc = self.validate(train_loader)
-            
-                train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
-                val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
-            
+                    train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
+                    val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
+                else:
+                    train_loss, train_acc = self.train_epoch(val_loader)
+                    val_loss, val_acc = self.validate(train_loader)
+                
+                    train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
+                    val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
+########################################################################################################################################
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
