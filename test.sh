@@ -4,12 +4,12 @@ python test.py \
     --data_root ./data \
     --csv_path ./data/test.csv \
     --output_path output.csv \
-    --checkpoint_path checkpoints/2024-09-24_01.07.05/final_checkpoint.pth \
+    --checkpoint_path checkpoints/2024-09-25_14.17.42/cp_epoch15_loss0.2617_acc0.9441.pth \
     --height 224 \
     --width 224 \
     --num_classes 500 \
-    --model timm-resnet50 \
+    --model timm-efficientnet_b0 \
     --batch 64 \
     --transform_type albumentations \
-    --augmentations hflip_vflip_rotate \
+    --augmentations rotate \
     --adjust_ratio

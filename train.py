@@ -139,6 +139,19 @@ def run_train(args:Namespace) -> None:
             patience=2,
             verbose=True
         )
+    elif args.lr_scheduler == 'CosineAnnealingLR':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, 
+            T_max=100, 
+            eta_min=0.001
+        )
+    elif args.lr_scheduler == 'CosineAnnealingWarmRestarts':
+        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer, 
+            T_0=50, 
+            T_mult=2, 
+            eta_min=0.001
+        )
 
     model.to(device)    
 
