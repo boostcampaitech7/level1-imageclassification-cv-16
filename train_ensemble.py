@@ -29,8 +29,8 @@ from model.ensemble import VotingEnsemble
 
 
 def load_model(model_name, num_classes):
-    """모델 이름에 따라 모델을 로드하는 함수"""
-    model_selector = ModelSelector(model_type=model_name, num_classes=num_classes)
+    #모델 이름에 따라 모델을 로드하는 함수
+    #model_selector = ModelSelector(model_type=model_name, num_classes=num_classes)
     if 'timm' in model_name:
         model_selector = ModelSelector(
             "timm", 
@@ -121,8 +121,16 @@ def run_train(args:Namespace) -> None:
     voting_type = 'soft'
 
     # 모델 로드 및 앙상블 구성
-    models = [load_model(name.strip(), num_classes) for name in model_names]
-    model = VotingEnsemble(models, voting=voting_type)
+    models = [load_model(name.strip(), num_classes).to(device) for name in model_names]
+    model = VotingEnsemble(models, voting_type=voting_type)
+
+    # 타입 확인을 위한 코드 추가
+    print(f"Ensemble model is of type: {type(model)}")
+
+    if isinstance(model, torch.nn.Module):
+        print("Ensemble model is a valid torch.nn.Module")
+    else:
+        raise ValueError("Ensemble model is not a torch.nn.Module")
     
     ## 옵티마이저
     optimizer = get_optimizer(model, optimizer_type, lr)
@@ -154,8 +162,6 @@ def run_train(args:Namespace) -> None:
         )
 
     model.to(device)    
-
-    load_model
 
     config = {'epoches': epochs, 'batch_size': batch_size, 'learning_rate': lr, 
               'model': model, 'device': device, 
