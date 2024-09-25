@@ -95,10 +95,18 @@ def run_train(args:Namespace) -> None:
         shuffle=False
     )
 
-    X = pd.read_csv('./data/train.csv').iloc[:, 1]
-    y = pd.read_csv('./data/train.csv').iloc[:, -1]
+    X = pd.read_csv(train_data_info_file).iloc[:, 1]
+    y = pd.read_csv(train_data_info_file).iloc[:, -1]
     num_folds = 5
-    custom_loader = HoDataLoader(X, y, train_transform, val_transform, batch_size=batch_size, num_folds=num_folds)
+    custom_loader = HoDataLoader(
+        X, 
+        y, 
+        train_transform, 
+        val_transform, 
+        batch_size=batch_size, 
+        csv_path=train_data_info_file, 
+        num_folds=num_folds
+    )
 
     ## 학습 모델
     if 'timm' in model_type:

@@ -94,7 +94,7 @@ class HoDataset(Dataset):
         return img, y
 
 class HoDataLoader:
-    def __init__(self, X, y, train_transform, val_transform, batch_size, num_folds=5, shuffle=True):
+    def __init__(self, X, y, train_transform, val_transform, batch_size, csv_path, num_folds=5, shuffle=True):
         self.X = X
         self.y = y
         self.batch_size = batch_size
@@ -104,6 +104,7 @@ class HoDataLoader:
         self.folds = list(self.kf.split(X))  # 미리 fold들을 계산해둡니다.
         self.train_transform = train_transform
         self.val_transform = val_transform
+        self.csv_path = csv_path
 
     def get_dataloaders(self, epoch):
         # epoch에 따라 해당 fold의 데이터를 반환
@@ -115,8 +116,8 @@ class HoDataLoader:
         y_train, y_val = self.y[train_idx], self.y[val_idx]
 
         # 각각의 dataset 생성
-        train_dataset = HoDataset(X_train, y_train, './data/train', False, self.train_transform, self.val_transform, False)
-        val_dataset = HoDataset(X_val, y_val, './data/train', False, self.train_transform, self.val_transform, True)
+        train_dataset = HoDataset(X_train, y_train, self.csv_path, False, self.train_transform, self.val_transform, False)
+        val_dataset = HoDataset(X_val, y_val, self.csv_path, False, self.train_transform, self.val_transform, True)
 
         # PyTorch DataLoader로 변환
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
