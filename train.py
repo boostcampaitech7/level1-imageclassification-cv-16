@@ -115,6 +115,7 @@ def run_train(args:Namespace) -> None:
         )
     
     model = model_selector.get_model()
+    model.to(device)
     
     ## 옵티마이저
     optimizer = get_optimizer(model, optimizer_type, lr)

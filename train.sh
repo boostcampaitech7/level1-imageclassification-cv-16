@@ -20,7 +20,7 @@ python -u train.py \
     --lr_scheduler_epochs_per_decay 2 \
     --batch 32 \
     --loss CE \
-    --optim adam \
+    --optim adamw \
     --epochs 40 \
     --r_epochs 2 \
     --seed 2024 \

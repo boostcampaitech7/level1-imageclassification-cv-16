@@ -4,7 +4,7 @@ python test.py \
     --data_root ./data \
     --csv_path ./data/test.csv \
     --output_path output.csv \
-    --checkpoint_path checkpoints/2024-09-24_13.52.44/cp_epoch1_loss3.0265_acc0.3617.pth \
+    --checkpoint_path checkpoints/2024-09-24_01.07.05/final_checkpoint.pth \
     --height 224 \
     --width 224 \
     --num_classes 500 \
