@@ -56,7 +56,8 @@ class AlbumentationsTransforms:
 
         full_aug_list = {'hflip': A.HorizontalFlip(p=0.5), #수평 플립
                          'vflip': A.VerticalFlip(p=0.5), #수직 플립
-                         'dropout': A.CoarseDropout(min_holes=1, max_holes=4, min_height=64, max_height=64, min_width=128, max_width=128, fill_value=(255, 255, 255), p=0.5),
+                         'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
+                         'dropout': A.CoarseDropout(min_holes=1, max_holes=2, min_height=32, max_height=32, min_width=64, max_width=64, fill_value=(255, 255, 255), p=0.5),
                          'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=0.5), #45도 제한 랜덤 회전
                          'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
                          'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
@@ -85,9 +86,9 @@ class AlbumentationsTransforms:
 
     def adjust_img_ratio(self, image:np.ndarray) -> np.ndarray:
         height, width = image.shape[:2]
-        if 0.5 < height / width < 1.5:
-            return image
-        max_side = max(width, height)
+        # if 0.5 < height / width < 1.5:
+        #     return image
+        max_side = max(256, max(width, height))
         white_background = np.ones((max_side, max_side, 3), dtype=np.uint8) * 255
         x_offset = (max_side - width) // 2
         y_offset = (max_side - height) // 2
