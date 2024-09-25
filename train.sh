@@ -15,20 +15,20 @@ python -u train.py \
     --stratify target \
     --model timm-resnet50 \
     --lr 0.001 \
-    --lr_scheduler ReduceLROnPlateau \
+    --lr_scheduler CosineAnnealingLR \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
     --batch 64 \
     --loss CE \
     --optim adamw \
-    --epochs 40 \
+    --epochs 2 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --augmentations vflip_rotate_dropout \
+    --augmentations rotate_dropout \
     --adjust_ratio \
     --early_stopping 15 \
-#    --verbose
+   --verbose
 #    --resume \
 #    --checkpoint_path ./checkpoints/checkpoint_epoch_16.pth
 
