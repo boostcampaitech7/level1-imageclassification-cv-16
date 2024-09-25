@@ -13,19 +13,19 @@ python -u train.py \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-resnet50 \
+    --model timm-efficientnet_b0 \
     --lr 0.001 \
-    --lr_scheduler CosineAnnealingLR \
+    --lr_scheduler CosineAnnealingWarmRestarts \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
     --batch 64 \
     --loss CE \
     --optim adamw \
-    --epochs 2 \
+    --epochs 20 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --augmentations rotate_dropout \
+    --augmentations rotate \
     --adjust_ratio \
     --early_stopping 15 \
    --verbose
