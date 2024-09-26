@@ -11,7 +11,7 @@ def visualize_gradcam(
         dataloader: DataLoader,
         target_layer: str,
         image_count: int
-    ):
+    ) -> None:
     cam_extractor = GradCAM(model.model, target_layer)
 
     save_dir = "./gradcam"

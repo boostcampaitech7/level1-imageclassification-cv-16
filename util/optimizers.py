@@ -1,6 +1,6 @@
 import torch.optim as optim
 
-def get_optimizer(model, optimizer_name, lr=1e-3, **kwargs):
+def get_optimizer(model, optimizer_name, lr=1e-3, **kwargs) -> optim.Optimizer:
     if optimizer_name == 'adam':
         return optim.Adam(model.parameters(), lr=lr, **kwargs)
     elif optimizer_name == 'sgd':

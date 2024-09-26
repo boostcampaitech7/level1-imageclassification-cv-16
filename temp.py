@@ -1,6 +1,7 @@
 import os
+from typing import List
 
-def remove_dot_files(folder_path):
+def remove_dot_files(folder_path: List[str]) -> None:
     for root, dirs, files in os.walk(folder_path):
         for file_name in files:
             if file_name.startswith('.'):

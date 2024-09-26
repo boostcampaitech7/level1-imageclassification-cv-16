@@ -11,5 +11,4 @@ python test.py \
     --model timm-efficientnet_b0 \
     --batch 64 \
     --transform_type albumentations \
-    --augmentations rotate \
     --adjust_ratio

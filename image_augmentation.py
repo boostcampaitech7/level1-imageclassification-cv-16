@@ -12,7 +12,7 @@ from util.augmentation import TransformSelector
 root_path = './data/train'
 csv_file = "./data/train.csv"
 
-def flip_image(root_path: str, csv_file: str):
+def flip_image(root_path: str, csv_file: str) -> None:
     train_df = pd.read_csv(csv_file)
     for file in tqdm(train_df["image_path"]):
         image_path = os.path.join(root_path, file)
@@ -32,7 +32,7 @@ def flip_image(root_path: str, csv_file: str):
     train_df.to_csv("./data/train1.csv", index=False, header=True)
     print(f"created : train1.csv")
 
-def add_white_image(root_path: str, csv_file: str):
+def add_white_image(root_path: str, csv_file: str) -> None:
     train_df = pd.read_csv(csv_file)
     new_rows = pd.DataFrame(columns=train_df.columns)
 
@@ -64,7 +64,7 @@ def add_white_image(root_path: str, csv_file: str):
     train_df.to_csv("./data/train1.csv", index=False, header=True)
     print(f"created : train1.csv")
 
-def reset_augmentation(root_path: str, aug: str):
+def reset_augmentation(root_path: str, aug: str) -> None:
     for root, dirs, files in tqdm(os.walk(root_path)):
         for file in files:
             if file.lower().endswith(('.png', '.jpg', '.jpeg')) and aug in file:
@@ -76,7 +76,7 @@ def reset_augmentation(root_path: str, aug: str):
     except Exception as e:
         pass
 
-def compare_original_and_augmented():
+def compare_original_and_augmented() -> None:
     os.makedirs("augmented_images", exist_ok=True)
     to_pil = transforms.ToPILImage()
     mean = torch.tensor([0.485, 0.456, 0.406])
