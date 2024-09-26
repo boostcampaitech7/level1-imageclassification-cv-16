@@ -178,38 +178,88 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         progress_bar.close()
 
         return total_loss, val_correct
-
     def train(self) -> None:
+            if self.resume:
+                self.load_settings()
+            print(f"training start")
+            print(f"checkpoints saved in {self.checkpoint_dir}")
+            # 전체 훈련 과정을 관리
+            count = 0
+            for epoch in range(self.start_epoch, self.epochs):
+                train_loss, train_acc = 0.0, 0.0
+                val_loss, val_acc = 0.0, 0.0
+                print(f"Epoch {epoch+1}/{self.epochs}")
+                
+                if epoch < self.epochs - self.r_epoch:
+                    train_loss, train_acc = self.train_epoch(self.train_loader)
+                    val_loss, val_acc = self.validate(self.val_loader)
+
+                    train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
+                    val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
+                else:
+                    train_loss, train_acc = self.train_epoch(self.val_loader)
+                    val_loss, val_acc = self.validate(self.train_loader)
+                
+                    train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
+                    val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
+                
+                print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
+
+                # wandb code 추가
+                wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+                
+                # self.save_checkpoint_tmp(epoch, val_loss)
+                if val_acc > self.best_val_acc:
+                    count = 0
+                else:
+                    count += 1
+                    if count == self.early_stopping:
+                        print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
+                        break
+                
+                self.save_checkpoint_tmp(epoch, val_loss, val_acc)
+                
+                if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
+                    self.scheduler.step(val_loss)
+                else:
+                    self.scheduler.step()
+                
+            # 최종 체크포인트
+            # self.final_save_model(epoch, val_loss)
+            self.final_save_model(epoch, train_loss, train_acc, val_loss, val_acc)
+        
+
+    def k_fold_train(self) -> None:
         if self.resume:
             self.load_settings()
         print(f"training start")
         print(f"checkpoints saved in {self.checkpoint_dir}")
         # 전체 훈련 과정을 관리
         count = 0
+#############################################################
+        k=5
+        for k_fold in range(k): ################ 1 fold로 전체 epoch, 2 fold로 전체 epoch, ... k fold로 전체 epoch
+            print(f'Fold {k_fold+1}/{k}')
+            k_fold_train_loader, k_fold_val_loader = self.custom_loader.get_dataloaders(k_fold)
 
-        for epoch in range(self.start_epoch, self.epochs):
-            train_loss, train_acc = 0.0, 0.0
-            val_loss, val_acc = 0.0, 0.0
-            print(f"Epoch {epoch+1}/{self.epochs}")
-############################################################# 매 epoch마다 k-fold cross validation이 k번 돌아가?? 여기 들여쓰기 하고 k번의 for문 필요?
-            k=5
-            for k_fold in range(k):################ 이렇게 하면 모든 fold가 매 epoch마다 한 번씩 validation set으로 사용된다고 gpt가 그랬어요
-                print(f'Fold {k_fold+1}/{k}')
-                train_loader, val_loader = self.custom_loader.get_dataloaders(k_fold)
+            for epoch in range(self.start_epoch, self.epochs):
+                train_loss, train_acc = 0.0, 0.0
+                val_loss, val_acc = 0.0, 0.0
+                print(f"Epoch {epoch+1}/{self.epochs}")
 
                 if epoch < self.epochs - self.r_epoch:
-                    train_loss, train_acc = self.train_epoch(train_loader)
-                    val_loss, val_acc = self.validate(val_loader)
+                    train_loss, train_acc = self.train_epoch(k_fold_train_loader)
+                    val_loss, val_acc = self.validate(k_fold_val_loader)
 
                     train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
                     val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
                 else:
-                    train_loss, train_acc = self.train_epoch(val_loader)
-                    val_loss, val_acc = self.validate(train_loader)
+                    train_loss, train_acc = self.train_epoch(k_fold_val_loader)
+                    val_loss, val_acc = self.validate(k_fold_train_loader)
                 
                     train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
                     val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
-########################################################################################################################################
+##############################################################
             print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
 
             # wandb code 추가
