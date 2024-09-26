@@ -182,8 +182,11 @@ def run_train(args:Namespace) -> None:
         args=args,
         custom_loader=custom_loader
     )
-
-    trainer.train()
+    is_k_fold = True
+    if is_k_fold:
+        trainer.k_fold_train()
+    else:
+        trainer.train()
     
     matrics_info = None
 
@@ -197,6 +200,9 @@ if __name__=='__main__':
     if args.device.lower() == 'cuda':
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         assert device == 'cuda', 'cuda로 수행하려고 하였으나 cuda를 찾을 수 없습니다.'
+    elif args.device.lower() == 'mps':
+        device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+        assert device == 'mps', 'mps를 찾을 수 없습니다.'
     else:
         device = 'cpu'
 
