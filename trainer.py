@@ -194,6 +194,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
 ############################################################# 매 epoch마다 k-fold cross validation이 k번 돌아가?? 여기 들여쓰기 하고 k번의 for문 필요?
             k=5
             for k_fold in range(k):################ 이렇게 하면 모든 fold가 매 epoch마다 한 번씩 validation set으로 사용된다고 gpt가 그랬어요
+                print(f'Flod {k_fold+1}/{k}')
                 train_loader, val_loader = self.custom_loader.get_dataloaders(k_fold)
 
                 if epoch < self.epochs - self.r_epoch:
