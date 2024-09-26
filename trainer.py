@@ -81,19 +81,19 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             for arg, value in vars(args).items():
                 f.write(f"--{arg} {value} \\ \n")
 
-    def save_checkpoint_tmp(self, epoch, val_loss, val_acc) -> None:
-        if val_acc >= self.best_val_acc+0.01:
+    def save_checkpoint_tmp(self, fold, val_loss, val_acc) -> None:
+        if val_acc >= self.best_val_acc:
             self.best_val_loss = val_loss
             self.best_val_acc = val_acc
-            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_epoch{epoch + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
-            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, val_loss, checkpoint_filepath)
-            print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
+            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_fold{fold + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
+            save_checkpoint(self.model, self.optimizer, self.scheduler, fold+1, val_loss, checkpoint_filepath)
+            print(f"Checkpoint updated at fold {fold + 1} and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def final_save_model(self, epoch, tloss, tacc, vloss, vacc) -> None:
+    def final_save_model(self, fold, tloss, tacc, vloss, vacc) -> None:
         # 체크포인트 저장
         final_checkpoint_filepath = os.path.join(self.checkpoint_dir, f'last_cp_tloss{tloss:.4f}_tacc{tacc:.4f}_vloss{vloss:.4f}_vacc{vacc:.4f}.pth')
-        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, tloss, final_checkpoint_filepath)
+        save_checkpoint(self.model, self.optimizer, self.scheduler, fold+1, tloss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader) -> float:
