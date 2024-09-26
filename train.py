@@ -66,6 +66,8 @@ def run_train(args:Namespace) -> None:
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
     
+    num_folds = 5 ############################################# k_fold 개수
+
     # train_df = pd.read_csv(train_data_info_file)
     # val_df = pd.read_csv(val_data_info_file)
     
@@ -97,7 +99,6 @@ def run_train(args:Namespace) -> None:
 
     X = pd.read_csv(train_data_info_file).iloc[:, 1]
     y = pd.read_csv(train_data_info_file).iloc[:, -1]
-    num_folds = 5
     custom_loader = HoDataLoader(
         X, 
         y, 
@@ -180,7 +181,8 @@ def run_train(args:Namespace) -> None:
         early_stopping=early_stopping,
         verbose=verbose,
         args=args,
-        custom_loader=custom_loader
+        custom_loader=custom_loader,
+        num_folds=num_folds
     )
     is_k_fold = True
     if is_k_fold:
