@@ -5,7 +5,7 @@ python -u train.py \
     --mode train \
     --device cuda \
     --data_root ./data \
-    --csv_path ./data/train1.csv \
+    --csv_path ./data/train_remove.csv \
     --val_csv ./data/val.csv \
     --height 224 \
     --width 224 \
@@ -13,22 +13,22 @@ python -u train.py \
     --auto_split True \
     --split_seed 42 \
     --stratify target \
-    --model timm-efficientnet_b0 \
+    --model timm-resnext101_32x32d.fb_wsl_ig1b_ft_in1k \
     --lr 0.001 \
-    --lr_scheduler CosineAnnealingWarmRestarts \
+    --lr_scheduler ReduceLROnPlateau \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
-    --batch 64 \
+    --batch 32 \
     --loss CE \
     --optim adamw \
-    --epochs 20 \
+    --epochs 200 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --augmentations rotate \
+    --augmentations vflip_hflip_rotate_dropout_noise \
     --adjust_ratio \
-    --early_stopping 15 \
-   --verbose
+    --early_stopping 10 \
+#   --verbose
 #    --resume \
 #    --checkpoint_path ./checkpoints/checkpoint_epoch_16.pth
 
