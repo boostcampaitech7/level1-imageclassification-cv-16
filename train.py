@@ -21,6 +21,7 @@ from util.data import CustomDataset
 from util.augmentation import TransformSelector
 from util.optimizers import get_optimizer
 from util.losses import CustomLoss
+from util.schedulers import get_scheduler
 from trainer import Trainer
 
 from model.model_selection import ModelSelector
@@ -134,26 +135,7 @@ def run_train(args:Namespace) -> None:
         loss = CustomLoss()
     
     ## Scheduler 관련
-    if args.lr_scheduler == 'stepLR':
-        scheduler_gamma = args.lr_scheduler_gamma # float 0.1
-        steps_per_epoch = len(train_dataloader)
-        
-        epochs_per_lr_decay = args.lr_scheduler_epochs_per_decay
-        scheduler_step_size = steps_per_epoch * epochs_per_lr_decay
-        
-        scheduler = optim.lr_scheduler.StepLR(
-            optimizer,
-            step_size=scheduler_step_size,
-            gamma=scheduler_gamma
-        )
-    elif args.lr_scheduler == 'ReduceLROnPlateau':
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode='min',
-            factor=args.lr_scheduler_gamma,
-            patience=2,
-            verbose=True
-        )
+    scheduler = get_scheduler(args.lr_scheduler, optimizer, args.lr_scheduler_gamma, args.lr_scheduler_epochs_per_decay, len(train_dataloader))
 
     model.to(device)    
 

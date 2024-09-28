@@ -1,3 +1,5 @@
+import pandas as pd
+from typing import Union
 # 필요 library들을 import합니다.
 import os
 import torch
@@ -56,7 +58,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         self.best_val_loss = float('inf')
         self.best_val_acc = 0.0
         
-        self.start_epoch = 0
+        # 학습 재개 관련 파라미터
+        self.start_epoch = 0 # 재개 
         self.resume = resume # 학습 재개를 위한 것인지
         self.verbose = verbose # prgoress바 출력 유무
         self.weights_path = weights_path # 학습 재개를 위해 불러와야할 가중치 주소
@@ -76,13 +79,13 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         #wandb.init(project="Project1", anonymous="allow")
         wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
         
-    def create_config_txt(self, root_path, args):
+    def create_config_txt(self, root_path: str, args: Namespace):
         with open(os.path.join(root_path, "config.txt"), "w") as f:
             for arg, value in vars(args).items():
                 f.write(f"--{arg} {value} \\ \n")
 
     def save_checkpoint_tmp(self, fold, val_loss, val_acc) -> None:
-        if val_acc >= self.best_val_acc:
+        if val_acc >= self.best_val_acc+0.01:
             self.best_val_loss = val_loss
             self.best_val_acc = val_acc
             checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_fold{fold + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
@@ -90,13 +93,13 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             print(f"Checkpoint updated at fold {fold + 1} and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def final_save_model(self, fold, tloss, tacc, vloss, vacc) -> None:
+    def final_save_model(self, fold: int, tloss: float, tacc: float, vloss: float, vacc: float) -> None:
         # 체크포인트 저장
         final_checkpoint_filepath = os.path.join(self.checkpoint_dir, f'last_cp_tloss{tloss:.4f}_tacc{tacc:.4f}_vloss{vloss:.4f}_vacc{vacc:.4f}.pth')
         save_checkpoint(self.model, self.optimizer, self.scheduler, fold+1, tloss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
-    def train_epoch(self, train_loader) -> float:
+    def train_epoch(self, train_loader: DataLoader) -> tuple[float, float]:
         # 한 에폭 동안의 훈련을 진행
         self.model.train()
         
@@ -127,7 +130,7 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         progress_bar.close()
         return total_loss, train_correct
 
-    def validate(self, val_loader) -> float:
+    def validate(self, val_loader: DataLoader) -> tuple[float, float]:
         # 모델의 검증을 진행
         self.model.eval()
         val_correct = 0

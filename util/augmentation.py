@@ -57,8 +57,9 @@ class AlbumentationsTransforms:
         full_aug_list = {'hflip': A.HorizontalFlip(p=0.5), #수평 플립
                          'vflip': A.VerticalFlip(p=0.5), #수직 플립
                          'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
-                         'dropout': A.CoarseDropout(min_holes=1, max_holes=2, min_height=32, max_height=32, min_width=64, max_width=64, fill_value=(255, 255, 255), p=0.5),
-                         'rotate': A.Rotate(limit=(-45, 45), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=0.5), #45도 제한 랜덤 회전
+                         'dropout': A.OneOf([A.CoarseDropout(min_holes=1, max_holes=2, min_height=32, max_height=64, min_width=32, max_width=64, fill_value=(255, 255, 255), p=0.5),
+                                            A.RandomCrop(height=self.height, width=self.width, p=0.5)], p=0.5),
+                         'rotate': A.Rotate(limit=(-60, 60), border_mode=cv2.BORDER_CONSTANT, value=(255, 255, 255), p=0.5), #45도 제한 랜덤 회전
                          'randcrop': A.RandomCrop(height=self.height, width=self.width, p=0.5),
                          'colorjitter': A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3), #색깔 변경
                          'affine': A.Affine(scale=(0.8, 1.2), shear=(-10, 10), p=0.5),
@@ -88,7 +89,7 @@ class AlbumentationsTransforms:
         height, width = image.shape[:2]
         # if 0.5 < height / width < 1.5:
         #     return image
-        max_side = max(256, max(width, height))
+        max_side = max(224, max(width, height))
         white_background = np.ones((max_side, max_side, 3), dtype=np.uint8) * 255
         x_offset = (max_side - width) // 2
         y_offset = (max_side - height) // 2
@@ -103,20 +104,20 @@ class CutMixTransforms:
     #def __call__(self, image1, image2, label1, label2) -> Tuple[torch.Tensor, torch.Tensor]: #두 개 이미지를 컷믹스
     def __call__(self, image1: torch.Tensor, image2: torch.Tensor, label1: torch.Tensor, label2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
 
-        lam = random.beta(self.alpha, self.alpha) #베타 분포로 람다 값 생성
-        bbx1, bby1, bbx2, bby2 = self.rand_bbox(image1.size(), lam) #랜덤 바운딩 박스 생성
+        lam = torch.tensor(random.betavariate(self.alpha, self.alpha)) #베타 분포로 람다 값 생성
+        bbx1, bby1, bbx2, bby2 = self.rand_bbox(image1.size(), lam.item()) #랜덤 바운딩 박스 생성
         image1[:, bbx1:bbx2, bby1:bby2] = image2[:, bbx1:bbx2, bby1:bby2] #바운딩 박스 내 영역 교체함
         lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (image1.size(-1) * image1.size(-2))) #새로운 람다 계산
         mixed_label = lam * label1 + (1 - lam) * label2 #레이블 섞음
         return image1, mixed_label
-
+################################bby1 = bby2
     @staticmethod
     def rand_bbox(size: Tuple[int, int, int], lam: float) -> Tuple[int, int, int, int]: #람다 값을 기준으로 랜덤한 바운딩 박스 생성
         W = size[2]
         H = size[1]
-        cut_rat = torch.sqrt(1. - lam) #자를 비율 계산
-        cut_w = int(W * cut_rat)
-        cut_h = int(H * cut_rat)
+        cut_rat = torch.sqrt(torch.tensor(1.) - lam) #자를 비율 계산
+        cut_w = torch.tensor(W * cut_rat, dtype=torch.int)
+        cut_h = torch.tensor(H * cut_rat, dtype=torch.int)
 
         cx = random.randint(0, W)
         cy = random.randint(0, H)
@@ -135,7 +136,7 @@ class MixUpTransforms:
         self.alpha = alpha
 
     def __call__(self, image1: torch.Tensor, image2: torch.Tensor, label1: torch.Tensor, label2: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]: #두 개 이미지를 믹스업
-        lam = random.beta(self.alpha, self.alpha)  # 베타 분포로 람다 값 생성
+        lam = random.betavariate(self.alpha, self.alpha)  # 베타 분포로 람다 값 생성
         mixed_image = lam * image1 + (1 - lam) * image2  # 이미지를 섞음
         mixed_label = lam * label1 + (1 - lam) * label2  # 레이블을 섞음
         return mixed_image, mixed_label

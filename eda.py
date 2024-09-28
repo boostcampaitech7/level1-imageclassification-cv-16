@@ -8,7 +8,7 @@ from collections import defaultdict
 root_path = './data/train'
 csv_file = "./data/train.csv"
 
-def get_image_info(root_path: str, csv_file: str):
+def get_image_info(root_path: str, csv_file: str) -> None:
     def extract_image_features(image_path: str):
         try:
             with Image.open(image_path) as img:

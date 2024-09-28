@@ -2,10 +2,10 @@ import argparse
 from argparse import Namespace
 from argparse import ArgumentParser
 class Custom_arguments_parser:
-    def __init__(self, mode):
+    def __init__(self, mode: str):
         self.mode = mode
     
-    def get_base_args(self):
+    def get_base_args(self) -> ArgumentParser:
         parser = argparse.ArgumentParser()
         parser.add_argument('--mode', type=str, default='train', help='Select mode train or test default is train', action='store')
         parser.add_argument('--device', type=str, default='cpu', help='Select device to run, default is cpu', action='store')
