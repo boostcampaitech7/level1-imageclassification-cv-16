@@ -19,16 +19,17 @@ python -u train.py \
     --lr_scheduler_gamma 0.1 \
     --lr_scheduler_epochs_per_decay 2 \
     --batch 32 \
+    --batch 32 \
     --loss CE \
     --optim adamw \
     --epochs 200 \
     --r_epochs 2 \
     --seed 2024 \
     --transform albumentations \
-    --augmentations vflip_hflip_rotate_dropout_noise \
+    --augmentations dropout_randcrop_rotate_noise \
     --adjust_ratio \
-    --early_stopping 10 \
-#   --verbose
+    --early_stopping 15 \
+    # --verbose
 #    --resume \
 #    --checkpoint_path ./checkpoints/checkpoint_epoch_16.pth
 

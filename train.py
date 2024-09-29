@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 from model import model_selection
 
-from util.data import CustomDataset, HoDataLoad   # hobbang: Dataset, DataLoader 코드 하나로 합체
+from util.data import CustomDataset
 from util.augmentation import TransformSelector
 from util.optimizers import get_optimizer
 from util.losses import CustomLoss
@@ -25,6 +25,7 @@ from util.schedulers import get_scheduler
 from trainer import Trainer
 
 from model.model_selection import ModelSelector
+from util.data import HoDataLoader
 
 def run_train(args:Namespace) -> None:
     ## device와 seed 설정
@@ -66,6 +67,8 @@ def run_train(args:Namespace) -> None:
     ## 데이터 증강 및 세팅
     transform_selector = TransformSelector(transform_type=transform_type)
     
+    num_folds = 5 ############################################# k_fold 개수
+
     # train_df = pd.read_csv(train_data_info_file)
     # val_df = pd.read_csv(val_data_info_file)
     
@@ -94,7 +97,19 @@ def run_train(args:Namespace) -> None:
         batch_size=batch_size,
         shuffle=False
     )
-    
+
+    X = pd.read_csv(train_data_info_file).iloc[:, 1]
+    y = pd.read_csv(train_data_info_file).iloc[:, -1]
+    custom_loader = HoDataLoader(
+        X, 
+        y, 
+        train_transform, 
+        val_transform, 
+        batch_size=batch_size, 
+        csv_path=train_data_info_file,
+        num_folds=num_folds
+    )
+
     ## 학습 모델
     if 'timm' in model_type:
         model_selector = ModelSelector(
@@ -147,10 +162,15 @@ def run_train(args:Namespace) -> None:
         r_epoch=r_epoch,
         early_stopping=early_stopping,
         verbose=verbose,
-        args=args
+        args=args,
+        custom_loader=custom_loader,
+        num_folds=num_folds
     )
-
-    trainer.train()
+    is_k_fold = True
+    if is_k_fold:
+        trainer.k_fold_train()
+    else:
+        trainer.train()
     
     matrics_info = None
 
@@ -164,6 +184,9 @@ if __name__=='__main__':
     if args.device.lower() == 'cuda':
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         assert device == 'cuda', 'cuda로 수행하려고 하였으나 cuda를 찾을 수 없습니다.'
+    elif args.device.lower() == 'mps':
+        device = 'mps' if torch.backends.mps.is_available() else 'cpu'
+        assert device == 'mps', 'mps를 찾을 수 없습니다.'
     else:
         device = 'cpu'
 

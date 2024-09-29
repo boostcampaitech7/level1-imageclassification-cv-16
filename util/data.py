@@ -10,6 +10,8 @@ from torchvision import transforms, utils
 from PIL import Image
 import matplotlib.pyplot as plt
 
+from sklearn.model_selection import KFold
+
 class CustomDataset(Dataset):
     def __init__(
             self, 
@@ -62,6 +64,67 @@ class CustomDataset(Dataset):
                 target = temp # 반환을 위해 target에 할당
             return img, target # 이미지와 레이블 반환
 
+class HoDataset(Dataset):
+    def __init__(self, X, y, root_dir, one_hot, train_transform, val_transform, is_val):
+        self.X = list(X)
+        self.y = list(y)
+        self.root_dir = root_dir
+        self.one_hot = one_hot
+        self.train_transform = train_transform
+        self.val_transform = val_transform
+        self.is_val = is_val
+        if self.one_hot:
+            self.one_hot_template = [0 for i in range(len(self.y.unique()))]
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        img = cv2.imread(os.path.join(self.root_dir, self.X[idx]), cv2.IMREAD_COLOR)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        if self.is_val:
+            img = self.val_transform(img)
+        else:
+            img = self.train_transform(img)
+        y = self.y[idx]
+        if self.one_hot:
+            temp = self.one_hot_template.copy()
+            temp[y] = 1
+            y = temp
+        return img, y
+
+class HoDataLoader:
+    def __init__(self, X, y, train_transform, val_transform, batch_size, csv_path, num_folds=5, shuffle=True):
+        self.X = X
+        self.y = y
+        self.batch_size = batch_size
+        self.num_folds = num_folds
+        self.shuffle = shuffle
+        self.kf = KFold(n_splits=num_folds, shuffle=shuffle, random_state=42)
+        self.folds = list(self.kf.split(X))  # 미리 fold들을 계산해둡니다.
+        self.train_transform = train_transform
+        self.val_transform = val_transform
+        self.csv_path = csv_path
+        self.data_root = './data/train'
+
+    def get_dataloaders(self, epoch):
+        # epoch에 따라 해당 fold의 데이터를 반환
+        fold_idx = epoch % self.num_folds  # epoch에 따라 fold index 결정
+        train_idx, val_idx = self.folds[fold_idx]
+        
+        # Train set과 Validation set을 각각 나눔
+        X_train, X_val = self.X[train_idx], self.X[val_idx]
+        y_train, y_val = self.y[train_idx], self.y[val_idx]
+
+        # 각각의 dataset 생성
+        train_dataset = HoDataset(X_train, y_train, self.data_root, False, self.train_transform, self.val_transform, False)
+        val_dataset = HoDataset(X_val, y_val, self.data_root, False, self.train_transform, self.val_transform, True)
+
+        # PyTorch DataLoader로 변환
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
+        
+        return train_loader, val_loader
 
 def print_image(idx: list, train: bool=True) -> None:
     image_paths= pd.read_csv('./data/train.csv').iloc[:, 1] if train else pd.read_csv('./data/test.csv').iloc[:, 0]
@@ -93,67 +156,67 @@ def print_image(idx: list, train: bool=True) -> None:
         ax.set_xticks([])
         ax.set_yticks([])
 
-class HoDataset(Dataset):
-    def __init__(self, csv_file: str, root_dir, batch_size=32, is_train:bool=False, val_ratio=0.2, random_state:int = 42):
-        '''
-        Args:
-            csv_file (string): csv 파일 경로
-            root_dir (string): 모든 이미지가 존재하는 디렉토리 경로
-            transform (callable, optional): 샘플에 적용될 Optional transform
-        '''
+# class HoDataset(Dataset):
+#     def __init__(self, csv_file: str, root_dir, batch_size=32, is_train:bool=False, val_ratio=0.2, random_state:int = 42):
+#         '''
+#         Args:
+#             csv_file (string): csv 파일 경로
+#             root_dir (string): 모든 이미지가 존재하는 디렉토리 경로
+#             transform (callable, optional): 샘플에 적용될 Optional transform
+#         '''
 
-        self.mode = 'train' if is_train else 'val'
-        self.data = pd.read_csv(csv_file)
-        self.root_dir = root_dir
-        self.batch_size = batch_size
-        ## test: root_dir = ./data/test
-        self.train, self.val = random_split(self.data, lengths=[1-val_ratio, val_ratio], generator=torch.Generator().manual_seed(random_state))
-        self.train = self.train.dataset.iloc[self.train.indices, :]
-        self.val = self.val.dataset.iloc[self.val.indices, :]
+#         self.mode = 'train' if is_train else 'val'
+#         self.data = pd.read_csv(csv_file)
+#         self.root_dir = root_dir
+#         self.batch_size = batch_size
+#         ## test: root_dir = ./data/test
+#         self.train, self.val = random_split(self.data, lengths=[1-val_ratio, val_ratio], generator=torch.Generator().manual_seed(random_state))
+#         self.train = self.train.dataset.iloc[self.train.indices, :]
+#         self.val = self.val.dataset.iloc[self.val.indices, :]
 
-    def __len__(self):
-        return len(self.train) if self.mode == 'train' else len(self.val)
+#     def __len__(self):
+#         return len(self.train) if self.mode == 'train' else len(self.val)
 
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
+#     def __getitem__(self, idx):
+#         if torch.is_tensor(idx):
+#             idx = idx.tolist()
 
-        if self.mode == 'train':
-            img_name = os.path.join(self.root_dir, self.train.iloc[idx, 1])
-            label = self.train.iloc[idx, 2]
-        else:
-            img_name = os.path.join(self.root_dir, self.val.iloc[idx, 1])
-            label = self.val.iloc[idx, 2]
-        image = Image.open(img_name)
+#         if self.mode == 'train':
+#             img_name = os.path.join(self.root_dir, self.train.iloc[idx, 1])
+#             label = self.train.iloc[idx, 2]
+#         else:
+#             img_name = os.path.join(self.root_dir, self.val.iloc[idx, 1])
+#             label = self.val.iloc[idx, 2]
+#         image = Image.open(img_name)
 
-        img_np=np.array(image)
-        if img_np.ndim != 3:
-            img_np = np.expand_dims(img_np, axis=2)
-            img_np = np.repeat(img_np, 3, axis=2)
+#         img_np=np.array(image)
+#         if img_np.ndim != 3:
+#             img_np = np.expand_dims(img_np, axis=2)
+#             img_np = np.repeat(img_np, 3, axis=2)
 
-        img_tensor = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize([224,224]),
-            transforms.ToTensor(),
-            ])(img_np)
+#         img_tensor = transforms.Compose([
+#             transforms.ToPILImage(),
+#             transforms.Resize([224,224]),
+#             transforms.ToTensor(),
+#             ])(img_np)
 
-        return img_tensor, label
+#         return img_tensor, label
 
-def HoDataLoad(
-        csv_path: str='./data', 
-        root_dir: str='./data/train', 
-        is_train: bool=False, 
-        batch_size: int=32, 
-        shuffle: bool=False,
-        val_ratio: float=0.2, 
-        random_state: int=42,
-    ) -> DataLoader:
-    csv_file = os.path.join(csv_path, 'train.csv')
-    dataset = HoDataset(csv_file=csv_file, root_dir=root_dir, batch_size=batch_size, is_train=is_train, val_ratio=val_ratio, random_state=random_state)
+# def HoDataLoad(
+#         csv_path: str='./data', 
+#         root_dir: str='./data/train', 
+#         is_train: bool=False, 
+#         batch_size: int=32, 
+#         shuffle: bool=False,
+#         val_ratio: float=0.2, 
+#         random_state: int=42,
+#     ) -> DataLoader:
+#     csv_file = os.path.join(csv_path, 'train.csv')
+#     dataset = HoDataset(csv_file=csv_file, root_dir=root_dir, batch_size=batch_size, is_train=is_train, val_ratio=val_ratio, random_state=random_state)
 
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+#     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
-    return dataloader
+#     return dataloader
 
 ##################################dataloader 사용 예시
 # dataloader = HoDataLoad()

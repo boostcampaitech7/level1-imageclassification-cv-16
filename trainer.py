@@ -12,6 +12,8 @@ from argparse import Namespace
 from tqdm.auto import tqdm
 from torch.utils.data import DataLoader
 from util.checkpoints import save_checkpoint
+from util.data import HoDataLoader
+import pandas as pd
 
 
 class Trainer: # 변수 넣으면 바로 학습되도록
@@ -33,7 +35,9 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         r_epoch: int,
         early_stopping: int,
         verbose: bool,
-        args: Namespace
+        args: Namespace,
+        custom_loader: DataLoader,
+        num_folds: int
     ):
         # 클래스 초기화: 모델, 디바이스, 데이터 로더 등 설정
         self.model = model  # 훈련할 모델
@@ -69,6 +73,8 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         
         self.create_config_txt(self.checkpoint_dir, args)
 
+        self.custom_loader = custom_loader
+        self.num_folds = num_folds
         # wandb 익명 모드로 초기화
         #wandb.init(project="Project1", anonymous="allow")
         wandb.watch(self.model, log="all")  # 모델을 모니터링하도록 설정
@@ -78,19 +84,19 @@ class Trainer: # 변수 넣으면 바로 학습되도록
             for arg, value in vars(args).items():
                 f.write(f"--{arg} {value} \\ \n")
 
-    def save_checkpoint_tmp(self, epoch: int, val_loss: float, val_acc: float) -> None:
-        if val_acc >= self.best_val_acc: ## validation accuracy 개선이 존재할 시 저장
+    def save_checkpoint_tmp(self, fold, val_loss, val_acc) -> None:
+        if val_acc >= self.best_val_acc+0.01:
             self.best_val_loss = val_loss
             self.best_val_acc = val_acc
-            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_epoch{epoch + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
-            save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, val_loss, checkpoint_filepath)
-            print(f"Checkpoint updated at epoch {epoch + 1} and saved as {checkpoint_filepath}")
+            checkpoint_filepath = os.path.join(self.checkpoint_dir, f'cp_fold{fold + 1}_loss{val_loss:.4f}_acc{val_acc:.4f}.pth')
+            save_checkpoint(self.model, self.optimizer, self.scheduler, fold+1, val_loss, checkpoint_filepath)
+            print(f"Checkpoint updated at fold {fold + 1} and saved as {checkpoint_filepath}")
             
     # save model과 체크포인트의 차이는? 아예 다른 코드인지
-    def final_save_model(self, epoch: int, tloss: float, tacc: float, vloss: float, vacc: float) -> None:
+    def final_save_model(self, fold: int, tloss: float, tacc: float, vloss: float, vacc: float) -> None:
         # 체크포인트 저장
         final_checkpoint_filepath = os.path.join(self.checkpoint_dir, f'last_cp_tloss{tloss:.4f}_tacc{tacc:.4f}_vloss{vloss:.4f}_vacc{vacc:.4f}.pth')
-        save_checkpoint(self.model, self.optimizer, self.scheduler, epoch+1, tloss, final_checkpoint_filepath)
+        save_checkpoint(self.model, self.optimizer, self.scheduler, fold+1, tloss, final_checkpoint_filepath)
         print(f"Final checkpoint saved as {final_checkpoint_filepath}")
 
     def train_epoch(self, train_loader: DataLoader) -> tuple[float, float]:
@@ -177,40 +183,99 @@ class Trainer: # 변수 넣으면 바로 학습되도록
         progress_bar.close()
 
         return total_loss, val_correct
-
     def train(self) -> None:
+            if self.resume:
+                self.load_settings()
+            print(f"training start")
+            print(f"checkpoints saved in {self.checkpoint_dir}")
+            # 전체 훈련 과정을 관리
+            count = 0
+            for epoch in range(self.start_epoch, self.epochs):
+                train_loss, train_acc = 0.0, 0.0
+                val_loss, val_acc = 0.0, 0.0
+                print(f"Epoch {epoch+1}/{self.epochs}")
+                
+                if epoch < self.epochs - self.r_epoch:
+                    train_loss, train_acc = self.train_epoch(self.train_loader)
+                    val_loss, val_acc = self.validate(self.val_loader)
+
+                    train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
+                    val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
+                else:
+                    train_loss, train_acc = self.train_epoch(self.val_loader)
+                    val_loss, val_acc = self.validate(self.train_loader)
+                
+                    train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
+                    val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
+                
+                print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
+
+                # wandb code 추가
+                wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+                
+                # self.save_checkpoint_tmp(epoch, val_loss)
+                if val_acc > self.best_val_acc:
+                    count = 0
+                else:
+                    count += 1
+                    if count == self.early_stopping:
+                        print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
+                        break
+                
+                self.save_checkpoint_tmp(epoch, val_loss, val_acc)
+                
+                if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
+                    self.scheduler.step(val_loss)
+                else:
+                    self.scheduler.step()
+                
+            # 최종 체크포인트
+            # self.final_save_model(epoch, val_loss)
+            self.final_save_model(epoch, train_loss, train_acc, val_loss, val_acc)
+        
+
+    def k_fold_train(self) -> None:
         if self.resume:
             self.load_settings()
         print(f"training start")
         print(f"checkpoints saved in {self.checkpoint_dir}")
         # 전체 훈련 과정을 관리
         count = 0
-        for epoch in range(self.start_epoch, self.epochs):
-            train_loss, train_acc = 0.0, 0.0
-            val_loss, val_acc = 0.0, 0.0
-            print(f"Epoch {epoch+1}/{self.epochs}")
-            
-            if epoch < self.epochs - self.r_epoch:
-                train_loss, train_acc = self.train_epoch(self.train_loader)
-                val_loss, val_acc = self.validate(self.val_loader)
+#############################################################
+        # k=5
+        for k_fold in range(self.num_folds): ################ 1 fold로 전체 epoch, 2 fold로 전체 epoch, ... k fold로 전체 epoch
+            print(f'Fold {k_fold+1}/{self.num_folds}')
+            k_fold_train_loader, k_fold_val_loader = self.custom_loader.get_dataloaders(k_fold)
+            k_fold_train_loss, k_fold_train_acc = 0.0, 0.0
+            k_fold_val_loss, k_fold_val_acc = 0.0, 0.0
 
-                train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
-                val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
-            else:
-                train_loss, train_acc = self.train_epoch(self.val_loader)
-                val_loss, val_acc = self.validate(self.train_loader)
-            
-                train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
-                val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
-            
-            print(f"Epoch {epoch+1}, Train Loss: {train_loss:.8f} | Train Acc: {train_acc:.8f} \nValidation Loss: {val_loss:.8f} | Val Acc: {val_acc:.8f}\n")
+            for epoch in range(self.start_epoch, self.epochs):
+                train_loss, train_acc = 0.0, 0.0
+                val_loss, val_acc = 0.0, 0.0
+                print(f"Epoch {epoch+1}/{self.epochs}")
+
+                if epoch < self.epochs - self.r_epoch:
+                    train_loss, train_acc = self.train_epoch(k_fold_train_loader)
+                    val_loss, val_acc = self.validate(k_fold_val_loader)
+
+                    train_loss, train_acc = train_loss / self.train_total, train_acc / self.train_total
+                    val_loss, val_acc = val_loss / self.val_total, val_acc / self.val_total
+                else:
+                    train_loss, train_acc = self.train_epoch(k_fold_val_loader)
+                    val_loss, val_acc = self.validate(k_fold_train_loader)
+                
+                    train_loss, train_acc = train_loss / self.val_total, train_acc / self.val_total
+                    val_loss, val_acc = val_loss / self.train_total, val_acc / self.train_total
+                k_fold_train_loss, k_fold_train_acc = train_loss, train_acc
+                k_fold_val_loss, k_fold_val_acc = val_loss, val_acc
+##############################################################
+            print(f"Fold {k_fold+1}, Train Loss: {k_fold_train_loss:.8f} | Train Acc: {k_fold_train_acc:.8f} \nValidation Loss: {k_fold_val_loss:.8f} | Val Acc: {k_fold_val_acc:.8f}\n")
 
             # wandb code 추가
-            wandb.log({'Epoch': epoch+1, 'Train Accuracy': train_acc, 'Train Loss': train_loss, 'Val Accuracy': val_acc, 'Val Loss': val_loss, 'Test Images': log_images}, step=epoch)
+            wandb.log({'Fold': k_fold+1, 'Train Accuracy': k_fold_train_acc, 'Train Loss': k_fold_train_loss, 'Val Accuracy': k_fold_val_acc, 'Val Loss': k_fold_val_loss, 'Test Images': log_images}, step=epoch)
             
             # self.save_checkpoint_tmp(epoch, val_loss)
-            # acc 계선이 존재할 경우 다시 early stopping count
-            if val_acc > self.best_val_acc:
+            if k_fold_val_acc > self.best_val_acc:
                 count = 0
             else:
                 count += 1
@@ -218,16 +283,16 @@ class Trainer: # 변수 넣으면 바로 학습되도록
                     print(f"{self.early_stopping} 에포크 동안 개선이 없어 학습이 중단됩니다.")
                     break
             
-            self.save_checkpoint_tmp(epoch, val_loss, val_acc)
+            self.save_checkpoint_tmp(k_fold, k_fold_val_loss, k_fold_val_acc)
             
             if type(self.scheduler) == optim.lr_scheduler.ReduceLROnPlateau:
-                self.scheduler.step(val_loss)
+                self.scheduler.step(k_fold_val_loss)
             else:
                 self.scheduler.step()
             
         # 최종 체크포인트
         # self.final_save_model(epoch, val_loss)
-        self.final_save_model(epoch, train_loss, train_acc, val_loss, val_acc)
+        self.final_save_model(k_fold, k_fold_train_loss, k_fold_train_acc, k_fold_val_loss, k_fold_val_acc)
         
     def load_settings(self) -> None:
         ## 학습 재개를 위한 모델, 옵티마이저, 스케줄러 가중치 및 설정을 불러옵니다.
