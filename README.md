@@ -152,7 +152,8 @@ sh test.sh
 ### args.py
 - train.sh, test.sh에서 받아온 인자를 파이썬에서 사용할 수 있는 변수로 변환하는 모듈
 
-### gradcam.py
+### gradcam.py 
+- Grad-CAM을 통해 Heatmap을 반환하는 함수를 포함하는 파일
 
 ### image_augmentation.py
 - offline augmentation하는 파일. 종횡비를 맞추기 위해 흰 배경 추가하는 코드와 flip을 적용하는 코드가 있다. 추가된 이미지를 포함한 ./data/train1.csv 파일을 생성
