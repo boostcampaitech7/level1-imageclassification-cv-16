@@ -20,6 +20,42 @@
 <br/>
 <br/>
 
+# 개발 환경 및 버젼
+```
+python==3.10.14
+pandas==2.1.4
+matplotlib==3.8.4
+seaborn==0.13.2
+Pillow==10.3.0
+numpy==1.26.3
+timm==0.9.16
+albumentations==1.4.4
+tqdm==4.66.1
+scikit-learn==1.4.2
+opencv-python==4.9.0.80
+```
+
+<br/>
+<br/>
+
+# 학습 코드 실행
+```
+sh train.sh
+```
+모델 학습에 필요한 하이퍼파라미터는 train.sh와 args.py에서 확인할 수 있습니다. 
+
+<br/>
+<br/>
+
+# 추론 코드 실행
+```
+sh test.sh
+```
+모델 추론에 필요한 하이퍼파라미터는 test.sh와 args.py에서 확인할 수 있습니다. 
+
+<br/>
+<br/>
+
 # Project Structure (프로젝트 구조)
 ```plaintext
 📦level1-imageclassification-cv-16
@@ -61,35 +97,8 @@
 ```
 
 <br/>
-<br/>
 
-### 개발 환경 및 버젼
-```
-python==3.10.14
-pandas==2.1.4
-matplotlib==3.8.4
-seaborn==0.13.2
-Pillow==10.3.0
-numpy==1.26.3
-timm==0.9.16
-albumentations==1.4.4
-tqdm==4.66.1
-scikit-learn==1.4.2
-opencv-python==4.9.0.80
-```
-### 학습 코드 실행
-```
-sh train.sh
-```
-모델 학습에 필요한 하이퍼파라미터는 train.sh와 args.py에서 확인할 수 있습니다. 
-### 추론 코드 실행
-```
-sh test.sh
-```
-모델 추론에 필요한 하이퍼파라미터는 test.sh와 args.py에서 확인할 수 있습니다. 
-
-### 각 파일별 설명
-#### train.sh
+### train.sh
 - train.py 파일을 실행시키면서 학습에 필요한 인자를 입력하는 쉘 스크립트 파일. 학습 재개 시 저장 시점과 동일한 하이퍼파라미터를 사용
 ```
  --mode: train 모드, test 모드 있음. train.sh에선 train 고정
@@ -119,12 +128,13 @@ sh test.sh
  --verbose: tqdm 사용 여부 결정. 주석 풀면 True, 아니면 False
  --resume, --checkpoint_path: 체크포인트에 저장된 모델 불러오기 여부, 체크포인트.pt 파일 경로. 세트로 사용
 ```
-#### train.py
+### train.py
 - trainer.py의 trainer 클래스를 불러와서 학습 시킴
-#### test.sh, test.py
+
+### test.sh, test.py
 - test.sh에서 인자를 받아 test.py 파일을 실행해 test data의 예측 결과 저장. train.sh와 비슷
 
-#### trainer.py
+### trainer.py
 - 학습 모듈
 ```
  -create_config_txt : train.sh 호출 당시 내용을 checkpoint 폴더에 함께 저장하여 어떤 하이퍼파라미터를 사용했는지 기록
@@ -136,46 +146,46 @@ sh test.sh
  -k_fold_train : train 함수에 K-Fold Cross Validation을 적용함
  -load_settings 체크포인트 저장 시점의 모델과 optimizer, scheduler 등 학습에 필요한 정보를 불러옴
 ```
-#### eda.py
+### eda.py
 - 모든 데이터의 메타데이터를 추출하여 csv파일로 만드는 파일
 
-#### args.py
+### args.py
 - train.sh, test.sh에서 받아온 인자를 파이썬에서 사용할 수 있는 변수로 변환하는 모듈
 
-#### gradcam.py
+### gradcam.py
 
-#### image_augmentation.py
+### image_augmentation.py
 - offline augmentation하는 파일. 종횡비를 맞추기 위해 흰 배경 추가하는 코드와 flip을 적용하는 코드가 있다. 추가된 이미지를 포함한 ./data/train1.csv 파일을 생성
 
-#### separate.py
+### separate.py
 - 데이터셋을 물리적으로 분리하는 파일
 
-#### util/augmentation.py
+### util/augmentation.py
 - augmentation 라이브러리를 관리하는 모듈. Albumentation을 사용
 ```
  -AlbumentationsTransforms 클래스: train.sh에서 받는 augmentations 인자를 가지고 클래스의 생성자가 full_aug_list를 보고 aug_list에 추가하여 사용할 증강 기법을 선택
  -TransformSelector: train.sh에서 받은 transform 인자로 어떤 증강 클래스를 사용할지 선택
 ```
-#### util/checkpoints.py
+### util/checkpoints.py
 - 체크포인트를 저장/불러오기 하는 모듈
 
-#### util/data.py
+### util/data.py
 - Dataset, DataLoader를 재정의하는 모듈
 ```
  -CustomDataset 클래스: 대회를 위해 제공받은 데이터셋에 맞게 데이터를 불러오게하는 Dataset
  -HoDataset, HoDataLoader 클래스: K-Fold cross validation을 위한 Dataset, DataLoader
 ```
-#### util/losses.py
+### util/losses.py
 - loss function을 가짐
 
-#### util/metrics.py
+### util/metrics.py
 - f1 score을 계산하는 모듈
 
-#### util/optimizers.py
+### util/optimizers.py
 - train.sh의 optim 인자를 받아서 optimizer를 선택할 수 있게 매핑하는 모듈
 
-#### util/schedulers.py
+### util/schedulers.py
 - train.sh의 lr_scheduler 인자를 받아서 learning rate scheduler를 선택할 수 있게 매핑하는 모듈
 
-#### model/
+### model/
 - model_selection 파일은 다른 모델을 불러오는 파일. timm, torchvision_model은 라이브러리를 쉽게 불러오기 위한 모듈
