@@ -190,3 +190,7 @@ sh test.sh
 
 ### model/
 - model_selection 파일은 다른 모델을 불러오는 파일. timm, torchvision_model은 라이브러리를 쉽게 불러오기 위한 모듈
+
+## 🔗 Reference
+
+### [📎 Wrapup Report](https://docs.google.com/document/d/1iAlyNw4r-V-5Q_FQlzzRdhlUt59wazMfl9hgjmcYV4o/edit?usp=sharing)
